@@ -1,0 +1,100 @@
+1. Tools
+
+   Following tools have been prepared for you:
+     - verilator
+     - gtkwave
+
+   To use gtkwave, you need to ssh to your VM usign -Y (or -X) options
+   to enable tunneling.
+
+
+2. Building/Running your simulator code
+
+   Following are the commands to build and run the code:
+
+   > make       // build code
+   > make run   // run code
+
+   The result of running the code will be a 'trace.vcd' waveform
+   file. You can view it using 'gtkwave' (see instructions below).
+
+
+3. Viewing the trace.vcd waveform
+
+   If you have logged in to the server using the -Y or -X option, you
+   can view waveforms using the following command:
+
+   > gtkwave <path-to-the-vcd-file>
+
+
+4. Submitting your code
+
+   First, make sure that you have set your NETID in 'conf/user.mk'.
+   
+   Type the following command in your project directory. It will sign
+   and submit your code to us:
+
+  > make submit
+
+
+5. What to implement?
+
+   1) You should implement a direct-mapped cache in SystemVerilog.
+   Your cache, on the one hand, interfaces with the processor and, on
+   the other hand, with the main memory.
+
+   We have provided the skeleton code for your cache including an SRAM
+   module that you should instantiate in your cache to implement the
+   data, tag and state arrays, and C++ code for emulating the main
+   memory.  Read the code in 'system.cpp' to understand how your cache
+   should interact with the main memory.
+
+   2) The code in 'system.cpp' also contains a partial testbench for
+   your cache.  It emulates a processor making cache requests. The
+   testbench is inomplete.  To test the cache properly, the testbench
+   should check the data returned by the cache on a read operation to
+   make sure it is consistent with the last write to the same memory
+   address.  You should add the code to perform this check to
+   'system.cpp'.
+
+
+6. How to go about the implementation?
+
+   1) Start by reading the SRAM code. Make sure you understand how it
+   works.  Then try to figure out how to instantiate state, tag and
+   data arrays of your cache as separate SRAM instances.  Note that
+   you will need to set the SRAM parameters differently for each of
+   these three instantiations.
+
+   2) Read the code in "system.cpp' to understand how the memory
+   interface---the interface between your cache and the memory
+   controller---works.  In particular, make sure you understand the
+   roles and behavior of 'reqtag', 'resptag', 'reqcyc', 'respcyc',
+   'reqack' and 'respack'---in terms of both functionality and timing.
+   This bus interface is a 'split-transaction bus' where you can have
+   multiple in-flight requests to the memory controller and each
+   request has a tag that determines the type of the request (read or
+   write) and its ID.  When the memory controller responds to a
+   request, it puts the request tag on 'resptag' to indicate which
+   in-flight request the response belongs to.
+
+   3) Write the code to handle a cache hit. This should be
+   straightforward.  Think about the differences between reads and
+   writes.  For reads, tag check and data read can happen in parallel.
+   For writes, data will be written after tag check if the latter
+   indicates a hit.  Based on this observation, should you keep tag
+   and data in the same SRAM array, or in separate ones?  How about
+   the state bits? Do you need a separate SRAM for those as well, or
+   can you keep them with the tag bits?
+
+   4) Write the code to handle a cache miss.  Note that, to handle a
+   cache miss, you typically need to kick-out an existing cache block
+   to make room for the new one.  If the block-to-be-booted is dirty,
+   it needs to be written back to the memory before you can replace
+   it.  If the block is clean, however, you can just discard it.
+   Then, you can read the new block from the memory, put it in the
+   cache, and then perform the requested operation.  This whole
+   process of miss-handling will inevitably be a multi-cycle process.
+
+   5) Complete the testbench code to make sure your cache works
+   properly, under all possible read/write sequences.
