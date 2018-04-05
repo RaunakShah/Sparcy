@@ -1,0 +1,114 @@
+1. Tools
+
+   Following tools have been prepared for you:
+     - verilator
+     - gtkwave
+     - sparc cross-compiler (in ~nhonarmand/cse502/sparc-toolset/bin)
+
+   To use the sparc tools, you need to set the environment variable
+   PATH.  The easiest way to do this is to source
+   the following shell scripts:
+     - if your shell is bash: ~nhonarmand/cse502/cse502-bashrc
+
+   To use gtkwave, you need to ssh to your VM usign -Y (or -X) options
+   to enable tunneling.
+
+
+2. Building/Running your simulator code
+
+   Following are the commands to build and run the code:
+
+   > make       // build code
+   > make run   // run code
+
+   The result of running the code will be a 'trace.vcd' waveform
+   file. You can view it using 'gtkwave' (see instructions below).
+
+   To change the program binary which you are decoding, edit the
+   following line in Makefile:
+   
+   RUNELF=...
+
+
+3. Viewing the trace.vcd waveform
+
+   If you have logged in to the server using the -Y or -X option, you
+   can view waveforms using the following command:
+
+   > gtkwave trace.vcd
+
+
+4. Submitting your code
+   
+   First, make sure that you have set your NETID in
+   'conf/user.mk'. (Just one team member's)
+
+   Type the following command in your project directory. It will sign
+   and submit your code to us:
+
+  > make submit
+
+
+5. Compiling sparc programs
+
+   We have provided a complete cross-compilation tool-chain to let
+   you compile and use your own sparc programs.  In addition to the
+   compiler, the tool-chain contains other typical gcc tools such
+   as the disassembler, linker, etc.  For exmaple, you can use the
+   disassembler to get a complete listing of the instructions in a
+   program.
+
+   You can, and you should, use the compiler to write test programs
+   --- other than the ones provided by us --- to test your designs.
+   You can find some example programs and a makefile in './sparc-prog'
+   subfolder.  Use that makefile as an skeleton to compile your own
+   sparc programs.
+
+   For our cross compiler, we are using a special version of libc
+   called 'diet libc'.  That's why you see the word 'diet' in the
+   command line of the compiler (CC) in the makefile. Don't be
+   surprise by that.
+
+
+6. Testing your sparc programs with 'qemu-sparc'
+
+   For your convenience, a user-mode simulator for sparc binaries is
+   provided to allow you to test your sparc binaries.  You can run it
+   like this (after sourcing the bash/csh scripts mentioned above):
+
+   > qemu-sparc <path-to-sparc-program> <program-arguments...>
+
+   'qemu-sparc' is based on the powerful emulation/virtual-machine
+   tool Qemu and has lots of feature that can come handy.  For
+   example, if you want to know the list of system calls your sparc
+   program makes, run
+
+   > qemu-sparc -strace <path-to-sparc-program> <program-arguments...>
+
+
+7. sparc-linux system call emulation
+
+   The simulation environment emulates a Linux OS running on a sparc
+   machine.  In other words, sparc-linux is the target system for your
+   test programs.  This means that a test program, every once in a
+   while, will make a system call that should be handled as if the
+   program is running on a sparc-linux machine.  The simulation
+   environment provides a function called 'cse502_syscall()' that you
+   should call from within your SystemVerilog code when your processor
+   needs to execute a system call instruction.  The call will then be
+   handled by the system-call emulation code (provided to you in
+   folder './sparc-linux').  Note that the system-call emulation is
+   partial and only a (commonly used) subset of the Linux system-calls
+   are currently supported.  You can check 'sparc-linux/syscall.c' to
+   find the list of the system calls that are currently (un)supported,
+   and you can use the 'qemu-sparc -strace' command mentioned above to
+   figure out the system calls made by your test programs.
+
+   If needed, we will add support for other system calls in the future
+   to enable a larger set of test programs.  When (if) that happens,
+   you will need to pull again from the git repo to get the latest
+   code.  To avoid code conflicts when merging the pulled code with
+   your existing code, do not modify *anything* in the './sparc-linux'
+   folder.  If you find a bug there, let us know, we'll fix it and you
+   can pull the fixed code from the repo.
+
