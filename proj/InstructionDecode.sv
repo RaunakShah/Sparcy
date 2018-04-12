@@ -3,7 +3,7 @@
  */
 
 // TODO data in, dest reg and enable for write to reg file
-
+// TODO default case statement should latch old values rather than 0's
 module InstructionDecode
 #(
   // bus parameters
@@ -38,6 +38,7 @@ logic [4:0] n_rs1, p_rs1, n_rs2, p_rs2;
 logic [31:0] n_inst, p_inst;
 logic [63:0] n_pc, p_pc;
 logic [31:0] val1, val2;
+logic n_id_read, p_id_read;
 
 
 RegFile regis (.clk(clk), .reset(reset), .rs1(p_rs1), .rs2(p_rs2), .val1(val1), .val2(val2));
@@ -55,14 +56,15 @@ always_comb begin
 			// check for dependencies. if present, go to states
 			if (if_write == 1) begin
 				n_state = STATEB;
-				id_read = 0;
+				n_id_read = 0;
 			end
 			else begin
 				n_state = STATEA;
-				id_read = 1;
+				n_id_read = 1;
 			end
 			end
 		STATEB: begin
+			n_id_read = 1;
 			n_rs1 = p_rs1;
 			n_rs2 = p_rs2;
 			n_inst = p_inst;
@@ -80,6 +82,7 @@ always_ff @(posedge clk) begin
 		p_rs1 <= 0;
 		p_rs2 <= 0;
 		p_inst <= 0;
+		p_id_read <= 0;
 	end
 	else begin
 		p_pc <= n_pc;
@@ -87,10 +90,12 @@ always_ff @(posedge clk) begin
 		p_rs1 <= n_rs1;
 		p_rs2 <= n_rs2;
 		p_inst <= n_inst;
+		p_id_read <= n_id_read;
 	end
 
 end
 //assign id_read = (p_state == STATEB)?1:0;
+assign id_read = p_id_read;
 assign id_stall = (p_state == STATES)?1:0;
 
 always_comb begin
@@ -111,7 +116,7 @@ always_comb begin
 			disp30 = inst[29:0];
 			end
 		default: begin
-			out_PCplus4 = 0;
+			out_PCplus4 = p_pc;
 			valA = 0;
 			valB = 0;
 			a = 0;
