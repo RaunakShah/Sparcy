@@ -23,7 +23,7 @@ module InstructionFetch
 	//input mux_sel,
 	// output of mux -- used within the module -- input to PC
 	output [63:0] inst,
-	output [63:0] PCplus4,
+	output [63:0] IF_PCplus4_out,
 	input logic ic_ack,
 	input [63:0] ic_data_out,
 	output logic ic_req, 
@@ -47,7 +47,7 @@ module InstructionFetch
 	logic [3:0] n_counter, p_counter;
 	logic n_write, p_write;
 	logic [63:0] p_inst, n_inst;
-  enum { STATEA=2'b00, STATEB=2'b01, STATEC=2'b10} n_state, p_state; 
+  enum { STATEA=2'b00, STATEB=2'b01, STATEC=2'b10, STATED=2'b11} n_state, p_state; 
 // instruction cache
 // IF/ID pipeline register
 
@@ -65,7 +65,13 @@ always_comb begin
 //	$display("bitches ack = %d", ic_ack);
 	case (p_state)
 		STATEA: begin
-			n_pc = p_pc4; // need to change to pc4 || target
+//			n_pc = p_pc4; // need to change to pc4 || target
+			n_pc = target;
+			if (n_pc == p_pc && n_pc != 0) begin
+				//$display("zero");
+				n_state = STATEA;
+				n_ic_req = 0;
+			end
 //			PCplus4 = 63'b1111; 
 //			$display("state a to b");
 		/*	if (mux_sel) begin
@@ -78,10 +84,10 @@ always_comb begin
 //				n_state = STATES;
 //				n_ic_req = 0;
 //			end
-//			else begin
+			else begin
 				n_state = STATEB;
 				n_ic_req = 1;
-//			end
+			end
 			end
 		STATEB: begin
 			// create inputs for instruction cache
@@ -96,8 +102,8 @@ always_comb begin
 					n_state = STATEC;
 				end
 				else begin
-					n_write = 1;
-					n_state = STATEA;	
+				n_write = 1;
+					n_state = STATED;	
 				end
 			end
 			else begin
@@ -110,9 +116,15 @@ always_comb begin
 				n_state = STATEC;
 			end
 			else begin
-				n_write = 1;
-				n_state = STATEA;
+					n_write = 1;
+				n_state = STATED;
 			end
+			end
+		STATED: begin
+			n_pc = p_pc;
+			if (id_read == 0)
+				n_write = 0;
+			n_state = STATEA;
 			end
 	endcase
 end  
@@ -152,7 +164,7 @@ end
 //assign inst = (ic_ack)?ic_data_out:0;
 //assign PCplus4 = (ic_ack)?p_pc_from_mux:0;
 //assign PCplus4 = (ic_ack || p_state == STATES)?(p_pc + 4):64'hffffffff;
-assign PCplus4 = p_pc4;
+assign IF_PCplus4_out = p_pc;
 assign if_write = p_write;
 assign inst = p_inst;
 assign ic_req = p_ic_req;

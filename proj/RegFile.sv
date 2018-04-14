@@ -27,9 +27,10 @@ always_ff @(posedge clk, negedge clk) begin
 	    GeneralRegister[0] = 0;
         end
         else begin
+		// if (clk) write to reg
 		if (!clk) begin
-			val1 <= GeneralRegister[5'b00000];
-			val2 <= GeneralRegister[5'b00010];
+			val1 <= GeneralRegister[rs1];
+			val2 <= GeneralRegister[rs2];
 		end
 	end
 end
