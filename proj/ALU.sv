@@ -12,7 +12,7 @@ module ALU
 	output [31:0] ALU_res_out,
 	input [31:0] ALU_PC_in,
 	input ALU_a_in,
-	input [3:0] ALU_cond_in, 
+	input [3:0] ALU_cond_in,
 	input [4:0] ALU_rd_in,
 	input [29:0] ALU_disp30_in,
 	output [31:0] ALU_target_address_out,
@@ -22,7 +22,7 @@ module ALU
 logic [31:0] valB;
 // mux to select between valb and imm based on i
 // alu takes val a and mux out
-// alu operation based on op and op3 
+// alu operation based on op and op3
 // default, pass dummy
 always_comb begin
 	// if no op => sethi 000000 in rd == 00000. pass output to mem which will do nothing
@@ -35,11 +35,27 @@ always_comb begin
 			ALU_res_out = ALU_valA_in + valB;
 		end // ADD
 		if (ALU_op3_in == SUB) begin // sub
-
+		  ALU_res_out = ALU_valA_in - valB;
 		end // sub
-
+		if(ALU_op3_in == AND) begin
+			ALU_res_out = ALU_valA_in && valB;
+		end
+		if(ALU_op3_in == OR) begin
+			ALU_res_out = ALU_valA_in || valB;
+		end
+		if(ALU_op3_in == XOR) begin
+			ALU_res_out = ALU_valA_in ^ valB;
+		end
+		if(ALU_op3_in == XNOR) begin
+			ALU_res_out = ALU_valA_in ~^ valB;
+		end
+		if(ALU_op3_in == UMUL || ALU_op3_in == SMUL) begin
+			ALU_res_out = ALU_valA_in * valB;
+		end
+		if(ALU_op3_in == UDIV || ALU_op3_in == SDIV) begin
+			ALU_res_out = ALU_valA_in / valB;
+		end
 	end
-
 
 end
 
@@ -47,4 +63,3 @@ end
 
 
 endmodule
-
