@@ -10,7 +10,7 @@
 `define OR 6'b000010
 `define ORcc 6'b010010
 `define ORN 6'b000110
-`define ORNcc 6'010110
+`define ORNcc 6'b010110
 `define XOR 6'b000011
 `define XORcc 6'b010011
 `define XNOR 6'b000111
