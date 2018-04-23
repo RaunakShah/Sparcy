@@ -38,10 +38,10 @@ always_comb begin
 		  ALU_res_out = ALU_valA_in - valB;
 		end // sub
 		if(ALU_op3_in == AND) begin
-			ALU_res_out = ALU_valA_in && valB;
+			ALU_res_out = ALU_valA_in & valB;
 		end
 		if(ALU_op3_in == OR) begin
-			ALU_res_out = ALU_valA_in || valB;
+			ALU_res_out = ALU_valA_in | valB;
 		end
 		if(ALU_op3_in == XOR) begin
 			ALU_res_out = ALU_valA_in ^ valB;

@@ -42,5 +42,8 @@
 `define SAVE 6'b111100
 `define RESTORE 6'b111101
 `define JMPL 6'b111000
+`define SETHI 3'b100
+`define RETT 6'b111001
+
 
 `endif

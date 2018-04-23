@@ -19,9 +19,9 @@ module RegFile
 );
 localparam NUM_ROWS = (WINDOW_SIZE*NO_OF_REG_WINDOWS);
 logic [NUM_ROWS-1:0] GeneralRegister [(2**REG_BITS_SIZE)-1:0];
-logic [NUM_ROWS-1:0] PSR[(2**5)-1:0];
-logic [NUM_ROWS-1:0] WIM[(2**5)-1:0];
-logic [NUM_ROWS-1:0] TBR[(2**5)-1:0];
+logic PSR[(2**5)-1:0];
+logic WIM[(2**5)-1:0];
+logic TBR[(2**5)-1:0];
 integer i;
 always_ff @(posedge clk, negedge clk) begin
         if (reset) begin
