@@ -9,6 +9,7 @@ module IDEXReg
 	input [PC_SIZE-1:0] IDEX_PCplus4_in,
 	input [INST_SIZE-1:0] IDEX_valA_in,
 	input [INST_SIZE-1:0] IDEX_valB_in,
+	input [INST_SIZE-1:0] IDEX_valD_in,
 	input IDEX_a_in,
 	input [5:0] IDEX_op3_in,
 	input IDEX_i_in,
@@ -22,6 +23,7 @@ module IDEXReg
 	output [PC_SIZE-1:0] IDEX_PCplus4_out,
 	output [INST_SIZE-1:0] IDEX_valA_out,
 	output [INST_SIZE-1:0] IDEX_valB_out,
+	output [INST_SIZE-1:0] IDEX_valD_out,
 	output IDEX_a_out,
 	output [5:0] IDEX_op3_out,
 	output IDEX_i_out,
@@ -39,12 +41,13 @@ always_ff @(posedge clk) begin
 		IDEX_PCplus4_out <= 0;
 		IDEX_valA_out <= 0;
 		IDEX_valB_out <= 0;
+		IDEX_valD_out <= 0;
 		IDEX_a_out <= 0;
 		IDEX_op_out <= 0;
 		IDEX_i_out <= 0;
 		IDEX_imm13_out <= 0;
 		IDEX_disp22_out <= 0;
-		IDEX_op_out <= 0;
+		IDEX_op3_out <= 0;
 		IDEX_cond_out <= 0;
 		IDEX_op2_out <= 0;
 		IDEX_rd_out <= 0;
@@ -54,12 +57,13 @@ always_ff @(posedge clk) begin
 		IDEX_PCplus4_out <= IDEX_PCplus4_in;
 		IDEX_valA_out <= IDEX_valA_in; 
 		IDEX_valB_out <= IDEX_valB_in;
+		IDEX_valD_out <= IDEX_valD_in;
 		IDEX_a_out <= IDEX_a_in ;
 		IDEX_op_out <= IDEX_op_in ;
 		IDEX_i_out <= IDEX_i_in ;
 		IDEX_imm13_out <= IDEX_imm13_in ;
 		IDEX_disp22_out <= IDEX_disp22_in ;
-		IDEX_op_out <= IDEX_op_in ;
+		IDEX_op3_out <= IDEX_op3_in ;
 		IDEX_cond_out <= IDEX_cond_in ;
 		IDEX_op2_out <= IDEX_op2_in ;
 		IDEX_rd_out <= IDEX_rd_in ;

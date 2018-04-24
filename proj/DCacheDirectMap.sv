@@ -1,7 +1,7 @@
 /**
  * A write-allocate, write-back direct-mapped cache
  */
-module DirectMap
+module DCacheDirectMap
 #(
   // bus parameters
   BUS_DATA_WIDTH = 64,
@@ -62,19 +62,19 @@ module DirectMap
   logic [31:0] n_proc_data_out, p_proc_data_out;
   // FIXME: instantiate separate SRAMs for state, tag and data
   // ...
-	SRAM #(.WIDTH(512), .LOG_NUM_ROWS(4), .WORD_SIZE(32)) dataSRAM (.clk(clk), .reset(reset), .readAddr(proc_line_addr[3:0]), .writeAddr(proc_line_addr[3:0]), .writeData(write_data_sram), .writeEnable(n_data_write), .readData(out_data_sram));
+	dcache_SRAM #(.WIDTH(512), .LOG_NUM_ROWS(4), .WORD_SIZE(32)) dcache_dataSRAM (.clk(clk), .reset(reset), .readAddr(proc_line_addr[3:0]), .writeAddr(proc_line_addr[3:0]), .writeData(write_data_sram), .writeEnable(n_data_write), .readData(out_data_sram));
 
-	SRAM #(.WIDTH(54), .LOG_NUM_ROWS(4), .WORD_SIZE(54)) tagSRAM (.clk(clk), .reset(reset), .readAddr(proc_line_addr[3:0]), .writeAddr(proc_line_addr[3:0]), .writeData(proc_line_addr[57:4]), .writeEnable(n_tag_write), .readData(out_tag_sram));
+	dcache_SRAM #(.WIDTH(54), .LOG_NUM_ROWS(4), .WORD_SIZE(54)) dcache_tagSRAM (.clk(clk), .reset(reset), .readAddr(proc_line_addr[3:0]), .writeAddr(proc_line_addr[3:0]), .writeData(proc_line_addr[57:4]), .writeEnable(n_tag_write), .readData(out_tag_sram));
 
-	SRAM #(.WIDTH(1), .LOG_NUM_ROWS(4), .WORD_SIZE(1)) dirtySRAM (.clk(clk), .reset(reset), .readAddr(proc_line_addr[3:0]), .writeAddr(proc_line_addr[3:0]), .writeData(dirty_line), .writeEnable(n_dirty_write), .readData(out_dirty_sram));
+	dcache_SRAM #(.WIDTH(1), .LOG_NUM_ROWS(4), .WORD_SIZE(1)) dcache_dirtySRAM (.clk(clk), .reset(reset), .readAddr(proc_line_addr[3:0]), .writeAddr(proc_line_addr[3:0]), .writeData(dirty_line), .writeEnable(n_dirty_write), .readData(out_dirty_sram));
   // FIXME: implement the cache logic
   // ...
 
 always_comb begin
 	n_reqcyc = 0;
 	n_req = 0;//{out_tag_sram + 6'b000000};
-	n_reqtag = 0;//13'b0000100000000;
-	n_counter = 0;
+	n_reqtag = p_reqtag;//0;//13'b0000100000000;
+	n_counter = p_counter;
 	n_ack = 0;
 	n_proc_data_out = p_proc_data_out;
 	n_respack = 0;
@@ -83,7 +83,7 @@ always_comb begin
 	case (p_state)
 		STATEA:	begin
 			if (proc_req == 1) begin
-				$display("state a to b");
+				//$display("cache: state a to b");
 				n_state = STATEB;
 			end
 			else begin
@@ -96,13 +96,13 @@ always_comb begin
 				//$display("data at location %h", out_data_sram);
 				//$display("out data %h", out_data_sram[proc_word_select*32 +: 32]);
 				//$display("proc word data %h",proc_word_select);
-				$display("b to a");
+				//$display("cache: b to a");
 
 				n_ack = 1;
 				n_proc_data_out = out_data_sram[proc_word_select*32 +: 32];
 				n_state = STATEA;
 				if (proc_read_write_n == 0) begin
-					$display("writing %h", proc_data_in);
+					//$display("writing %h", proc_data_in);
 					write_data_sram = proc_data_in << (proc_word_select*32);
 					n_data_write = 1 << (proc_word_select);
 					n_dirty_write = 1;
@@ -112,12 +112,15 @@ always_comb begin
 			end
 			else begin // miss	
 				if (out_dirty_sram == 1) begin // dirty
-					//	$display("STATEB dirty miss at %h", {out_tag_sram, proc_line_addr[3:0], 6'b000000});
+						$display("STATEB dirty miss at %h", {out_tag_sram, proc_line_addr[3:0], 6'b000000});
 					//$display("data at location %h", out_data_sram);
 					n_state = STATEC;
+					//$display("cache: b to c");
+					n_counter = 0;
 				end
 				else begin
 					n_state = STATED;// TODO clean miss
+					//$display("cache: b to d");
 					//$display("clean miss sup");
 				end
 			end
@@ -129,9 +132,10 @@ always_comb begin
 				//	$display("STATEC dirty miss at %h", {out_tag_sram, proc_line_addr[3:0], 6'b000000});
 				//$display("%d sending %h with tag %h",p_counter, n_req, n_reqtag);
 				n_req = {out_tag_sram, proc_line_addr[3:0], 6'b000000};
-				n_reqtag = 13'b0000100000000;
+				n_reqtag = 13'b0000100000011;
 				n_reqcyc = 1;
 				n_state = STATEC;
+					//$display("cache: c to c 1");
 				n_counter = p_counter + 1;
 			end
 			else begin
@@ -141,16 +145,19 @@ always_comb begin
 						n_reqtag = p_reqtag;
 						n_reqcyc = 1;
 						n_state = STATEC;
+					//$display("cache: c to c 2 n_req %d n_reqtag %d ", n_req, n_reqtag);
 						n_counter = p_counter + 1;
 						// $display("sending %h", n_req);
 						// $display("data at location %h", out_data_sram);
 					end
 					else begin
 						n_state = STATED;
+					//$display("cache: c to d");
 					end
 				end
 				else begin
 					n_state = STATEC;
+					//$display("cache: c to c 3");
 					n_counter = p_counter;
 					n_req = p_req;
 					n_reqtag = p_reqtag;
@@ -161,7 +168,9 @@ always_comb begin
 		STATED: begin
 			if (bus_reqack == 1) begin
 				//$display("got reqack going to statee");
+					//$display("cache: d to e");
 				n_state = STATEE;
+				n_counter = 0;
 			end
 			else begin
 				n_tag_write = 1;
@@ -169,15 +178,16 @@ always_comb begin
 				dirty_line = 0;
 				n_reqcyc = 1;
 				n_req = {proc_line_addr, 6'b000000};
-				n_reqtag = 13'b1000100000000;
+				n_reqtag = 13'b1000100000011;
 				
 				n_state = STATED;
+					//$display("cache: d to D");
 				//$display("sending tag %h", n_reqtag);
 				//$display("sending out addr %h to be added to line %h", proc_line_addr, proc_line_addr[3:0]);
 			end
 			end
 		STATEE: begin
-			if (bus_respcyc == 1) begin
+			if (bus_respcyc == 1 && bus_resptag == p_reqtag) begin
 				//$display("got respcyc");
 				n_counter = p_counter + 1;
 				n_respack = 1;
@@ -185,13 +195,17 @@ always_comb begin
 				n_data_write = 3 << (p_counter*2);
 				//$display("pcounter %h writedata %h ndatawrite %h", p_counter, write_data_sram, n_data_write);
 				if (p_counter < 7) begin
+					//$display("cache: E to e");
 					n_state = STATEE;
 				end
 				else begin
+					//$display("cache: e to b");
 					n_state = STATEB;
+					n_reqtag = 0;
 				end
 			end	
 			else begin 
+					//$display("cache: e to e");
 				n_state = STATEE;
 			end
 			end

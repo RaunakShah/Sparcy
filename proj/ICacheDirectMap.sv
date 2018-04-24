@@ -67,11 +67,11 @@ module ICacheDirectMap
   // ...
 
 always_comb begin
-	$display("i cache");
+	//$display("i cache");
 	n_reqcyc = 0;
 	n_req = 0;//{out_tag_sram + 6'b000000};
-	n_reqtag = 0;//13'b0000100000000;
-	n_counter = 0;
+	n_reqtag = p_reqtag;//13'b0000100000000;
+	n_counter = p_counter;
 	n_ack = 0;
 	n_proc_data_out = p_proc_data_out;
 	n_respack = 0;
@@ -88,7 +88,7 @@ always_comb begin
 			end
 		STATEB: begin
 			if (out_tag_sram == proc_line_addr[57:4]) begin // hit
-				//$display("out tag sram %d proc line add %d", out_tag_sram, proc_line_addr[57:4]);
+				//$display("out tag sram %ld proc line add %ld", out_tag_sram, proc_line_addr[57:4]);
 				//$display("data at location %h", out_data_sram);
 				//$display("out data %h", out_data_sram[proc_word_select*32 +: 32]);
 				//$display("proc word data %h",proc_word_select);
@@ -107,6 +107,7 @@ always_comb begin
 			if (bus_reqack == 1) begin
 				//$display("got reqack going to statee");
 				n_state = STATEE;
+				n_counter = 0;
 			end
 			else begin
 				n_tag_write = 1;
@@ -121,8 +122,8 @@ always_comb begin
 			end
 			end
 		STATEE: begin
-			n_counter = p_counter; // just added - does response come back in consecutive cycles?
-			if (bus_respcyc == 1) begin
+			//n_counter = p_counter; // just added - does response come back in consecutive cycles?
+			if (bus_respcyc == 1 && bus_resptag == p_reqtag) begin
 				//$display("got respcyc");
 				n_counter = p_counter + 1;
 				n_respack = 1;
@@ -134,6 +135,7 @@ always_comb begin
 				end
 				else begin
 					n_state = STATEB;
+					n_reqtag = 0;
 				end
 			end	
 			else begin 

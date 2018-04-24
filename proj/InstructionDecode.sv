@@ -16,7 +16,7 @@ module InstructionDecode
 	input [BUS_INST_WIDTH-1:0] inst,
 	output id_ready,
 	output [BUS_DATA_WIDTH-1:0] ID_PCplus4_out,
-	output [BUS_INST_WIDTH-1:0] valA, valB,
+	output [BUS_INST_WIDTH-1:0] valA, valB, valD,
 	output a,
 	output [5:0] op3,
 	output i,
@@ -27,26 +27,30 @@ module InstructionDecode
 	output [2:0] op2,
 	output [4:0] rd,
 	output [29:0] disp30,
-	input ex_ready
+	input ex_ready,
+	input WB_reg_en,
+	input [31:0] WB_data_out,
+	input [4:0] WB_regD_out
 
 );
   enum { STATEA=2'b00, STATEB=2'b01, STATES=2'b10} n_state, p_state; 
 //	logic [4:0] rs1, rs2;
 //	logic [BUS_DATA_WIDTH-1:0] n_pc4, p_pc4;
-logic [4:0] n_rs1, p_rs1, n_rs2, p_rs2;
+logic [4:0] n_rs1, p_rs1, n_rs2, p_rs2, n_rd, p_rd;
 logic [31:0] n_inst, p_inst;
 logic [63:0] n_pc, p_pc;
-logic [31:0] val1, val2;
+logic [31:0] val1, val2, val3;
 logic n_id_read, p_id_read;
 logic n_id_write, p_id_write;
 
 
-RegFile regis (.clk(clk), .reset(reset), .rs1(p_rs1), .rs2(p_rs2), .val1(val1), .val2(val2));
+RegFile regis (.clk(clk), .reset(reset), .rs1(p_rs1), .rs2(p_rs2), .val1(val1), .val2(val2), .val3(val3), .rd(p_rd), .reg_write_en(WB_reg_en), .data(WB_data_out), .wr_reg(WB_regD_out));
 
 // next state logic
 always_comb begin
 	n_rs1 = p_rs1;
 	n_rs2 = p_rs2;
+	n_rd = p_rd;
 	n_inst = p_inst;
 	n_pc = p_pc;
 	case (p_state)	
@@ -62,6 +66,7 @@ always_comb begin
 				n_state = STATEB;
 				n_rs1 = inst[18:14];
 				n_rs2 = inst[4:0];
+				n_rd = inst[29:25];
 				n_inst = inst;
 				n_pc = ID_PCplus4_in;
 			end
@@ -82,6 +87,7 @@ always_ff @(posedge clk) begin
 		p_state <= STATEA;
 		p_rs1 <= 0;
 		p_rs2 <= 0;
+		p_rd <= 0;
 		p_inst <= 32'h01000000;
 	end
 	else begin
@@ -89,14 +95,19 @@ always_ff @(posedge clk) begin
 		p_state <= n_state;
 		p_rs1 <= n_rs1;
 		p_rs2 <= n_rs2;
+		p_rd <= n_rd;
 		p_inst <= n_inst;
+		
 	end
 
 end
 always_comb begin
+	case (p_state)
+		STATEA: begin 
 			ID_PCplus4_out = p_pc;
 			valA = val1;
 			valB = val2;
+			valD = val3;
 			a = p_inst[29];
 			op3 = p_inst[24:19];
 			i = p_inst[13];
@@ -107,12 +118,25 @@ always_comb begin
 			op2 = p_inst[24:22];
 			rd = p_inst[29:25];
 			disp30 = p_inst[29:0];
-	case (p_state)
-		STATEA: begin
 			id_ready = 1;
 			end
-		default: 
+		default: begin
 			id_ready = 0; 
+			ID_PCplus4_out = 0;
+			valA = 0;
+			valB = 0;
+			valD = 0;
+			a = 0;//p_inst[29];
+			op3 = 0;//;p_inst[24:19];
+			i = 0;//p_inst[13];
+			imm13 = 0;//p_inst[12:0];
+			disp22 = 0;//p_inst[21:0];
+			op = 0;//p_inst[31:30];
+			cond = 0;//p_inst[28:25];
+			op2 = 3'b100;//p_inst[24:22];
+			rd = 0;//p_inst[29:25];
+			disp30 = 0;//p_inst[29:0];
+		end
 	endcase
 end
 

@@ -33,7 +33,7 @@ module InstructionFetch
   enum { STATEA=2'b00, STATEB=2'b01, STATEC=2'b10, STATED=2'b11} n_state, p_state; 
 // instruction cache
 // IF/ID pipeline register
-
+// to stall for branches: in predecode, if branch, stall in state a for 5 cycles before accepting input 
 // next state logic
 always_comb begin
 	n_ic_req = p_ic_req;
@@ -50,6 +50,7 @@ always_comb begin
 			else begin
 				n_state = STATEB;
 				n_ic_req = 1;
+			//$display("next instruction to cache: %ld", n_pc);
 			end
 			end
 		STATEB: begin
