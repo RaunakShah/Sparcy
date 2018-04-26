@@ -30,7 +30,13 @@ module InstructionDecode
 	input ex_ready,
 	input WB_reg_en,
 	input [31:0] WB_data_out,
-	input [4:0] WB_regD_out
+	input [4:0] WB_regD_out,
+	input [4:0] IDEX_rd_out,
+	input [4:0] EXMem_regD_out,
+	input [4:0] MemWB_regD_out,
+	input IDEX_regWrite,
+	input EXMem_regWrite,
+	input MemWB_regWrite
 
 );
   enum { STATEA=2'b00, STATEB=2'b01, STATES=2'b10} n_state, p_state; 
@@ -74,8 +80,30 @@ always_comb begin
 		STATEB: begin
 			if (ex_ready == 0)
 				n_state = STATEB;
-			else
-				n_state = STATEA;	
+			else begin
+				// if rs's == rd of older instruction, stay
+				if ((p_rd == IDEX_rd_out || p_rs2 == IDEX_rd_out) && (IDEX_rd_out != 5'b00000) && (IDEX_regWrite == 1)) begin
+					n_state = STATEB;	
+					//$display("stall ONE");
+				end
+				else begin 
+					if ((p_rd == EXMem_regD_out || p_rs2 == EXMem_regD_out) && (EXMem_regD_out != 5'b00000) && (EXMem_regWrite == 1)) begin
+						n_state = STATEB;
+						//$display("stall TWO");
+					end
+					else begin 
+						if ((p_rd == MemWB_regD_out || p_rs2 == MemWB_regD_out) && (MemWB_regD_out != 5'b00000) && (MemWB_regWrite == 1)) begin
+							n_state = STATEB;
+							//$display("stall THREE");
+	
+						end
+						else begin
+							//$display("NO stall");
+							n_state = STATEA;
+						end	
+					end
+				end
+			end
 			end
 	endcase
 end  

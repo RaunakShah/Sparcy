@@ -25,19 +25,30 @@ module InstructionFetch
 	output logic ic_req, 
 	output [57:0] ic_line_addr,
 	output [3:0] ic_word_select,
-	output if_write
+	output if_ready
 );
 	logic [63:0] n_pc, p_pc;//_from_mux, p_pc_from_mux, // also pc into PC
 	logic n_ic_req, p_ic_req;
 	logic [31:0] p_inst, n_inst;
-  enum { STATEA=2'b00, STATEB=2'b01, STATEC=2'b10, STATED=2'b11} n_state, p_state; 
+logic n_b, p_b;
+logic [2:0] n_counter, p_counter;
+  enum { STATEA=2'b00, STATEB=2'b01, STATEC=2'b10, STATES=2'b11} n_state, p_state; 
 // instruction cache
 // IF/ID pipeline register
-// to stall for branches: in predecode, if branch, stall in state a for 5 cycles before accepting input 
+// to stall for branches: in predecode, if branch, stall in state a for 6 cycles before accepting input 
+
+// stall on branch algorithm:
+// before going to A, if branch, goto S
+// in first cycle, output, then bubble
+// maybe need to change output logic to 
+
+
 // next state logic
 always_comb begin
 	n_ic_req = p_ic_req;
 	n_inst = p_inst;
+	n_counter = 0;
+	n_b = p_b;
 	case (p_state)
 		STATEA: begin
 //			n_pc = p_pc+4;
@@ -67,7 +78,15 @@ always_comb begin
 					n_state = STATEC;
 				end
 				else begin
-					n_state = STATEA;	
+			/*		if (p_inst[31:30] == 2'b01  && p_inst[24:22] == 3'b001)
+						n_b = 1;
+					else
+						n_b = 0;
+					if (p_b == 1)
+						n_state = STATES;
+					else
+			*/			n_state = STATEA;	
+					//n_state = STATES;	
 				end
 			end
 			else begin
@@ -78,8 +97,28 @@ always_comb begin
 			n_pc = p_pc;
 			if (id_ready == 0) 
 				n_state = STATEC;
-			else
+			else begin
+				if (p_inst[31:30] == 2'b01  && p_inst[24:22] == 3'b001)
+					n_b = 1;
+				else
+					n_b = 0;
+				if (p_b == 1)
+					n_state = STATES;
+				else
+					n_state = STATEA;
+			
+			end
+			end
+		STATES: begin
+			n_pc = p_pc;
+			n_counter = p_counter + 1;
+			if (p_counter == 0) begin
+				n_inst = 32'h01000000;
+				n_state = STATES;
+			end
+			else begin
 				n_state = STATEA;
+			end
 			end
 	endcase
 end  
@@ -91,6 +130,8 @@ always_ff @(posedge clk, negedge clk) begin
 		p_state <= STATEA;
 		p_ic_req <= 0;
 		p_inst <= 32'h01000000;
+		p_counter <= 0;
+		p_b <= 0;
 	end
 	else begin
 		if (!clk) begin
@@ -102,10 +143,12 @@ always_ff @(posedge clk, negedge clk) begin
 			end
 		end
 		else begin
+			p_counter <= n_counter;
 			p_ic_req <= n_ic_req;
 			p_pc <= n_pc;
 			p_state <= n_state;
 			p_inst <= n_inst;
+			p_b <= n_b;
 		end
 	end
 end
@@ -118,10 +161,16 @@ always_comb begin
 	case (p_state)
 		STATEA: begin
 			inst = p_inst;
+			if_ready = 1;
+			end
+		STATES: begin
+			inst = p_inst;
+			if_ready = 0;
 			end
 		default: begin
 //			IF_PCplus4_out = 64'hffffffffffffffff;
 			inst = 32'h01000000; // stall for now
+			if_ready = 0;
 			end
 	endcase
 end

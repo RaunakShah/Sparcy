@@ -48,9 +48,11 @@ module Execute
 	output [2:0] EX_op2_out,
 	output [5:0] EX_op3_out,
 	output [INST_SIZE-1:0] EX_valD_out,
-	input mem_ready
+	input mem_ready, 
+	output annul_out
 );
 
+	logic annul_in;
 enum { STATEA=2'b00, STATEB=2'b01 } p_state, n_state;
 logic n_ex_ready, p_ex_ready;
 logic [INST_SIZE-1:0] n_valA, p_valA, n_valB, p_valB, n_valD, p_valD; 
@@ -69,11 +71,13 @@ logic [31:0] p_alu_out, n_alu_out;
 logic [31:0] n_pc, p_pc;
 logic [31:0] p_target_out;
 logic p_mux_sel;
+logic n_annul, p_annul;
 
 ALU alu (.ALU_valA_in(p_valA), .ALU_valB_in(p_valB), .ALU_op_in(p_op), .ALU_op2_in(p_op2), .ALU_imm22_in(p_imm22), .ALU_op3_in(p_op3), .ALU_i_in(p_i), .ALU_simm13_in(p_imm13), .ALU_res_out(p_alu_out), .ALU_PC_in(p_pc), .ALU_a_in(p_a), .ALU_cond_in(p_cond), .ALU_rd_in(p_rd), .ALU_disp30_in(p_disp30), .ALU_target_address_out(p_target_out), .ALU_mux_sel_out(p_mux_sel), .clk(clk), .reset(reset));
 
 // add logic for bubble from decode
-always_comb begin	
+always_comb begin
+	n_annul = p_annul;	
 	case (p_state)
 		STATEA: begin
 			n_valA = EX_valA_in;
@@ -93,13 +97,20 @@ always_comb begin
 			if (EX_op_in  == 2'b00 && EX_op2_in == 3'b100 && EX_rd_in == 5'b00000) begin
 				n_state = STATEA;
 				n_ex_ready = 1;
+				annul_out = annul_in;
 			end
 			else begin
 				if (mem_ready == 0) begin
 					n_state = STATEB;
 					n_ex_ready = 0;
+					annul_out = 0;
 				end
 				else begin
+					// annul 
+					if (EX_op_in == 2'b01 && EX_op2_in == 3'b001)
+						annul_out = EX_a_in;
+					else 
+						annul_out = 0;
 					n_state = STATEA;
 					n_ex_ready = 1;
 				end
@@ -121,10 +132,16 @@ always_comb begin
 			n_disp30 = p_disp30;//EX_disp30_in;
 			n_valD = p_valD;
 			if (mem_ready == 0) begin
+				annul_out = 0;
 				n_state = STATEB;
 				n_ex_ready = 0;
 			end
 			else begin
+				// annul 
+				if (p_op == 2'b01 && p_op2 == 3'b001) 
+					annul_out = p_a;
+				else 
+					annul_out = 0;
 				n_state = STATEA;
 				n_ex_ready = 1;
 			end
@@ -133,7 +150,7 @@ always_comb begin
 
 
 end
-
+/*
 assign ex_ready = p_ex_ready; 
 assign EX_alures_out = p_alu_out;
 assign EX_target_out = p_target_out;
@@ -143,6 +160,7 @@ assign EX_op_out = p_op;
 assign EX_op2_out = p_op2;
 assign EX_op3_out = p_op3;
 assign EX_valD_out = p_valD;
+*/
 // register
 always_ff @(posedge clk) begin
 	if (reset) begin
@@ -162,6 +180,7 @@ always_ff @(posedge clk) begin
 		p_rd <= 0;//n_rd;
 		p_disp30 <= 0;//n_disp30;
 		p_valD <= 0;
+		p_annul <= 0;
 	end
 	else begin
 		p_state <= n_state;
@@ -181,9 +200,75 @@ always_ff @(posedge clk) begin
 		p_rd <= n_rd;
 		p_disp30 <= n_disp30;
 		p_valD <= n_valD;
+		p_annul <= n_annul;
 	end
 
 end
+
+always_comb begin
+	if (annul_in) begin
+		EX_alures_out = p_alu_out;//0;
+		EX_target_out = p_target_out;
+		EX_mux_sel_out = p_mux_sel;//0;
+		EX_regD_out = p_rd; //5'b00000
+		EX_op_out = 2'b00;
+		EX_op2_out = 3'b100;
+		EX_op3_out = 0;
+		EX_valD_out = p_valD;//0;
+	end
+	else begin
+		EX_alures_out = p_alu_out;
+		EX_target_out = p_target_out;
+		EX_mux_sel_out = p_mux_sel;
+		EX_regD_out = p_rd; 
+		EX_op_out = p_op;
+		EX_op2_out = p_op2;
+		EX_op3_out = p_op3;
+		EX_valD_out = p_valD;
+	end
+	case (p_state) 
+		STATEA: 
+			ex_ready = 1;
+		default: 
+			ex_ready = 0;
+	endcase
+end
+
+always_ff @(posedge clk) begin
+	if (reset)
+		annul_in <= 0;
+	else 
+		annul_in <= annul_out;
+end
+
+/*
+always_comb begin
+	case (p_state) 
+		STATEA: begin
+ex_ready = 1;//p_ex_ready; 
+EX_alures_out = p_alu_out;
+EX_target_out = p_target_out;
+EX_mux_sel_out = p_mux_sel;
+EX_regD_out = p_rd; 
+EX_op_out = p_op;
+EX_op2_out = p_op2;
+EX_op3_out = p_op3;
+EX_valD_out = p_valD;
+		end
+		default: begin
+ex_ready = 0; 
+EX_alures_out = p_alu_out;//0;
+EX_target_out = p_target_out;
+EX_mux_sel_out = p_mux_sel;//0;
+EX_regD_out = p_rd; //5'b00000
+EX_op_out = p_op;//2'b00
+EX_op2_out = p_op2;//3;b100
+EX_op3_out = p_op3;//0;
+EX_valD_out = p_valD;//0;
+		end
+	endcase
+end
+*/
 
 
 endmodule 

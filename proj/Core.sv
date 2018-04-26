@@ -34,6 +34,9 @@ logic [57:0] ic_line_addr;//
 logic [3:0] ic_word_select; //
 logic [31:0] ic_data_out;
 logic ic_ack; //
+logic if_ready;
+logic [31:0] nPC_out;
+logic [31:0] nPC_in;
 
 logic [63:0] IFID_PCplus4_out; // pc + 4
 logic [63:0] ID_PCplus4_out; // pc + 4
@@ -114,7 +117,7 @@ logic [63:0] dc_req_out;
 logic [12:0] dc_reqtag_out;
 logic dc_reqack_in;
 logic dc_respack_out;
-
+logic annul;
 
 logic [63:0] MemWB_alures_out;
 logic [63:0] MemWB_load_data_out;
@@ -126,9 +129,9 @@ logic WB_reg_en;
 logic [31:0] WB_data_out;
 logic [4:0] WB_regD_out;
 
-NextInstruction #(64) nextinst (.clk(clk), .reset(reset), .ni_PCplus4_in(next_inst), .entry(entry), .NI_PC_out(inst), .target(EXMem_target_out), .mux_en(EXMem_mux_sel_out));
+NextInstruction #(64) nextinst (.clk(clk), .reset(reset), .ni_PCplus4_in(next_inst), .entry(entry), .NI_PC_out(inst), .target(EXMem_target_out), .mux_en(EXMem_mux_sel_out), .if_ready(if_ready), .nPC_out(nPC_out), .nPC_in(nPC_out));
 //$display("target = %d", target);
-InstructionFetch ifstage (.clk(clk), .reset(reset), .target(inst), .IF_PCplus4_out(next_inst), .ic_ack(ic_ack), .ic_req(ic_req), .ic_line_addr(ic_line_addr), .ic_word_select(ic_word_select), .if_write (if_write), .id_ready(id_ready), .ic_data_out(ic_data_out), .inst(if_inst_out), .entry(entry)); 
+InstructionFetch ifstage (.clk(clk), .reset(reset), .target(inst), .IF_PCplus4_out(next_inst), .ic_ack(ic_ack), .ic_req(ic_req), .ic_line_addr(ic_line_addr), .ic_word_select(ic_word_select), .id_ready(id_ready), .ic_data_out(ic_data_out), .inst(if_inst_out), .entry(entry), .if_ready(if_ready)); 
 
   // implement your processor here...
   // IF stage - Instantiate the IF stage
@@ -138,11 +141,11 @@ ICacheDirectMap #(64, 13, 4, 4, 58, 4) i_cache (.clk(clk), .reset(reset), .proc_
 
 IFIDReg #(64, 32) ifidpipeline (.clk(clk), .reset(reset), .IFID_PCplus4_in(next_inst), .inst(if_inst_out), .IFID_PCplus4_out(IFID_PCplus4_out), .inst_decode(inst_decode));
 
-InstructionDecode #(64, 32) idstage (.clk(clk), .reset(reset), .ID_PCplus4_in(IFID_PCplus4_out), .inst(inst_decode), .id_ready(id_ready), .ID_PCplus4_out(ID_PCplus4_out), .valA(valA), .valB(valB), .a(a), .op3(op3), .i(i), .imm13(imm13), .disp22(disp22), .op(op), .cond(cond), .op2(op2), .rd(rd), .disp30(disp30), .ex_ready(ex_ready), .valD(valD), .WB_reg_en(WB_reg_en), .WB_data_out(WB_data_out), .WB_regD_out(WB_regD_out));
+InstructionDecode #(64, 32) idstage (.clk(clk), .reset(reset), .ID_PCplus4_in(IFID_PCplus4_out), .inst(inst_decode), .id_ready(id_ready), .ID_PCplus4_out(ID_PCplus4_out), .valA(valA), .valB(valB), .a(a), .op3(op3), .i(i), .imm13(imm13), .disp22(disp22), .op(op), .cond(cond), .op2(op2), .rd(rd), .disp30(disp30), .ex_ready(ex_ready), .valD(valD), .WB_reg_en(WB_reg_en), .WB_data_out(WB_data_out), .WB_regD_out(WB_regD_out), .IDEX_rd_out(IDEX_rd_out), .EXMem_regD_out(EXMem_regD_out), .MemWB_regD_out(MemWB_regD_out), .IDEX_regWrite(1), .EXMem_regWrite(1), .MemWB_regWrite(1));
 
 IDEXReg #(64, 32) idexpipeline (.clk(clk), .reset(reset), .IDEX_PCplus4_in(ID_PCplus4_out), .IDEX_valA_in(valA), .IDEX_valB_in(valB), .IDEX_a_in(a), .IDEX_op3_in(op3), .IDEX_i_in(i), .IDEX_imm13_in(imm13), .IDEX_disp22_in(disp22), .IDEX_op_in(op), .IDEX_cond_in(cond), .IDEX_op2_in(op2), .IDEX_rd_in(rd), .IDEX_disp30_in(disp30), .IDEX_PCplus4_out(IDEX_PC_out), .IDEX_valA_out(IDEX_valA_out), .IDEX_valB_out(IDEX_valB_out), .IDEX_a_out(IDEX_a_out), .IDEX_op3_out(IDEX_op3_out), .IDEX_i_out(IDEX_i_out), .IDEX_imm13_out(IDEX_imm13_out), .IDEX_disp22_out(IDEX_disp22_out), .IDEX_op_out(IDEX_op_out), .IDEX_cond_out(IDEX_cond_out), .IDEX_op2_out(IDEX_op2_out), .IDEX_rd_out(IDEX_rd_out), .IDEX_disp30_out(IDEX_disp30_out), .IDEX_valD_in(valD), .IDEX_valD_out(IDEX_valD_out)); 
 
-Execute execute (.clk(clk), .reset(reset), .EX_PC_in(IDEX_PC_out), .EX_valA_in(IDEX_valA_out), .EX_valB_in(IDEX_valB_out), .EX_a_in(IDEX_a_out), .EX_op3_in(IDEX_op3_out), .EX_i_in(IDEX_i_out), .EX_imm13_in(IDEX_imm13_out), .EX_disp22_in(IDEX_disp22_out), .EX_op_in(IDEX_op_out), .EX_cond_in(IDEX_cond_out), .EX_op2_in(IDEX_op2_out), .EX_rd_in(IDEX_rd_out), .EX_disp30_in(IDEX_disp30_out), .EX_target_out(EX_target_out), .EX_mux_sel_out(EX_mux_sel_out), .ex_ready(ex_ready), .mem_ready(mem_ready), .EX_alures_out(EX_alures_out), .EX_regD_out(EX_regD_out), .EX_op_out(EX_op_out), .EX_op2_out(EX_op2_out), .EX_op3_out(EX_op3_out), .EX_valD_in(IDEX_valD_out), .EX_valD_out(EX_valD_out));
+Execute execute (.clk(clk), .reset(reset), .EX_PC_in(IDEX_PC_out), .EX_valA_in(IDEX_valA_out), .EX_valB_in(IDEX_valB_out), .EX_a_in(IDEX_a_out), .EX_op3_in(IDEX_op3_out), .EX_i_in(IDEX_i_out), .EX_imm13_in(IDEX_imm13_out), .EX_disp22_in(IDEX_disp22_out), .EX_op_in(IDEX_op_out), .EX_cond_in(IDEX_cond_out), .EX_op2_in(IDEX_op2_out), .EX_rd_in(IDEX_rd_out), .EX_disp30_in(IDEX_disp30_out), .EX_target_out(EX_target_out), .EX_mux_sel_out(EX_mux_sel_out), .ex_ready(ex_ready), .mem_ready(mem_ready), .EX_alures_out(EX_alures_out), .EX_regD_out(EX_regD_out), .EX_op_out(EX_op_out), .EX_op2_out(EX_op2_out), .EX_op3_out(EX_op3_out), .EX_valD_in(IDEX_valD_out), .EX_valD_out(EX_valD_out), .annul_out(annul));
 
 EXMemReg exmempipeline (.clk(clk), .reset(reset), .EXMem_target_in(EX_target_out), .EXMem_mux_sel_in(EX_mux_sel_out), .EXMem_target_out(EXMem_target_out), .EXMem_mux_sel_out(EXMem_mux_sel_out), .EXMem_alures_in(EX_alures_out), .EXMem_alures_out(EXMem_alures_out), .EXMem_regD_in(EX_regD_out), .EXMem_op_in(EX_op_out), .EXMem_op2_in(EX_op2_out), .EXMem_op3_in(EX_op3_out), .EXMem_regD_out(EXMem_regD_out), .EXMem_op_out(EXMem_op_out), .EXMem_op2_out(EXMem_op2_out), .EXMem_op3_out(EXMem_op3_out), .EXMem_valD_in(EX_valD_out), .EXMem_valD_out(EXMem_valD_out));
 /*
