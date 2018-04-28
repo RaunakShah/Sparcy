@@ -16,12 +16,18 @@ module Mem
 	output mem_ready,
 	output dc_req,
 	output [57:0] dc_line_addr,
-	output [3:0] dc_word_select,
+	output [2:0] dc_word_select,
+	output [2:0] dc_byte_offset,
 	output [63:0] dc_data_to_cache, // 63 because of load/store double words
 	output dc_read_write_n,
 	input dc_ack,
 	input [63:0] dc_data_from_cache,
-	input [31:0] Mem_valD_in
+	input [63:0] Mem_valD_in,
+	input Mem_regWrite_in,
+	output Mem_regWrite_out,
+	input Mem_regWriteDouble_in,
+	output Mem_regWriteDouble_out,
+	output [1:0] store_type
 );
 	
 
@@ -37,7 +43,7 @@ module Mem
 enum { STATEA=2'b00, STATEB=2'b01 } n_state, p_state;
 logic n_dc_req, p_dc_req;
 logic [57:0] n_dc_line_addr, p_dc_line_addr;
-logic [3:0] n_dc_word_select, p_dc_word_select;
+logic [2:0] n_dc_word_select, p_dc_word_select;
 logic n_dc_read_write_n, p_dc_read_write_n;
 logic n_mem_ready, p_mem_ready;
 logic [63:0] n_alures, p_alures;
@@ -47,26 +53,34 @@ logic [2:0] n_op2, p_op2;
 logic [5:0] n_op3, p_op3; 
 logic [63:0] n_dc_data_to_cache, p_dc_data_to_cache;
 logic [4:0] n_regd, p_regd;
-
-
+logic n_regWrite, p_regWrite;
+logic n_regWriteDouble, p_regWriteDouble;
+logic [2:0] n_byte_offset, p_byte_offset;
+logic [1:0] n_store_type, p_store_type;
 always_comb begin
 	n_dc_line_addr = p_dc_line_addr;//Mem_alures_in[63:6];
 	n_dc_word_select = p_dc_word_select;//Mem_alures_in[:2];
 	n_dc_data_to_cache = p_dc_data_to_cache;//5'b11111;// rd value  
 	n_dc_read_write_n = p_dc_read_write_n;//0;// if store
 	n_mem_ready = p_mem_ready;//0;
+	n_byte_offset = p_byte_offset;
+	n_store_type = p_store_type;
 	case (p_state) // NOTE: only needs to go to b if load or store.
 		STATEA: begin
-			if (Mem_op_in == 2'b01) begin // NOTE: change to load only later
-				//$display("request for %d", Mem_alures_in);
-				//$display("mem: state a to b");
+			if (load_op(Mem_op_in, Mem_op3_in) || store_op(Mem_op_in, Mem_op3_in)) begin 
 				// load/store op
 				n_state = STATEB;
 				n_dc_req = 1;
 				n_dc_line_addr = Mem_alures_in[63:6];
-				n_dc_word_select = Mem_alures_in[5:2];
+				n_dc_word_select = Mem_alures_in[5:3];
+				n_byte_offset = Mem_alures_in[2:0];
 				n_dc_data_to_cache = Mem_valD_in;// rd value  
-				n_dc_read_write_n = 1;// if store, 0
+				n_store_type = store_t(Mem_op3_in);
+				if (store_op(Mem_op_in, Mem_op3_in)) begin
+					n_dc_read_write_n = 0;// if store, 0
+				end
+				else
+					n_dc_read_write_n = 1;	
 				n_mem_ready = 0;
 				n_alures = Mem_alures_in;
 				n_load_data = 0;
@@ -74,13 +88,16 @@ always_comb begin
 				n_op2 = Mem_op2_in;
 				n_op3 = Mem_op3_in;
 				n_regd = Mem_regD_in;
+				n_regWrite = Mem_regWrite_in;
+				n_regWriteDouble = Mem_regWriteDouble_in;
 			end
 			else begin
 				n_state = STATEA;
 				//$display("mem: state a to a");
 				n_dc_req = 0;
 				n_dc_line_addr = Mem_alures_in[63:6];
-				n_dc_word_select = Mem_alures_in[5:2];
+				n_dc_word_select = Mem_alures_in[5:3];
+				n_byte_offset = Mem_alures_in[2:0];
 				n_dc_data_to_cache = 5'b11111;// rd value  
 				n_dc_read_write_n = 1;// if store
 				n_mem_ready = 1;
@@ -90,6 +107,9 @@ always_comb begin
 				n_op = Mem_op_in;
 				n_op2 = Mem_op2_in;
 				n_op3 = Mem_op3_in;
+				n_regWrite = Mem_regWrite_in;
+				n_regWriteDouble = Mem_regWriteDouble_in;
+				n_store_type = store_t(Mem_op3_in);
 			end
 			end
 		STATEB: begin
@@ -99,6 +119,8 @@ always_comb begin
 			n_op = p_op; //Mem_op_in;
 			n_op2 = p_op2;//Mem_op2_in;
 			n_op3 = p_op3;//Mem_op3_in;
+			n_regWrite = p_regWrite;
+			n_regWriteDouble = p_regWriteDouble;
 			if (dc_ack) begin
 				n_dc_req = 0;
 				n_load_data = dc_data_from_cache;
@@ -124,13 +146,17 @@ always_ff @(posedge clk, negedge clk) begin
 		p_regd <= 5'b00000;//n_regd ;
 		p_op <= 2'b00;//n_op ;
 		p_op2 <= 3'b100;//n_op2; 
-		p_op3 <= 0;//n_op3;
+		p_op3 <= 6'b100000;//n_op3;
 		p_dc_line_addr <= 0;//n_dc_line_addr ;
 		p_dc_word_select <= 0;//n_dc_word_select; 
+		p_byte_offset <= 0;
 		p_dc_data_to_cache <= 0;//n_dc_data_to_cache; 
 		p_dc_read_write_n <= 1;//n_dc_read_write_n; 
 		p_mem_ready <= 1;//n_mem_ready;
 		p_dc_req <= 0;
+		p_regWrite <= 0;
+		p_regWriteDouble <= 0;
+		p_store_type <= 0;
 	end
 	else begin
 		if (!clk) begin
@@ -151,10 +177,14 @@ always_ff @(posedge clk, negedge clk) begin
 		p_op3 <= n_op3;
 		p_dc_line_addr <= n_dc_line_addr ;
 		p_dc_word_select <= n_dc_word_select; 
+		p_byte_offset <= n_byte_offset; 
 		p_dc_data_to_cache <= n_dc_data_to_cache; 
 		p_dc_read_write_n <= n_dc_read_write_n; 
 		p_mem_ready <= n_mem_ready;
 		p_dc_req <= n_dc_req;
+		p_regWrite <= n_regWrite;
+		p_regWriteDouble <= n_regWriteDouble;
+		p_store_type <= n_store_type;
 		end
 	end
 end
@@ -165,8 +195,10 @@ always_comb begin
 	dc_req = p_dc_req;
 	dc_line_addr = p_dc_line_addr;
 	dc_word_select = p_dc_word_select;
+	dc_byte_offset = p_byte_offset;
 	dc_data_to_cache = p_dc_data_to_cache;
 	dc_read_write_n = p_dc_read_write_n;
+	store_type = p_store_type;
 	case (p_state)
 		STATEA: begin
 			Mem_alures_out = p_alures;
@@ -175,7 +207,9 @@ always_comb begin
 	 		Mem_op_out = p_op;
 	 		Mem_op2_out = p_op2;
  			Mem_op3_out = p_op3;
-			mem_ready = p_mem_ready;
+			mem_ready = 1;//p_mem_ready;
+			Mem_regWrite_out = p_regWrite;
+			Mem_regWriteDouble_out = p_regWriteDouble;
 			end
 		STATEB: begin
 			Mem_alures_out = p_alures;
@@ -184,9 +218,46 @@ always_comb begin
 	 		Mem_op_out = 2'b00;
 	 		Mem_op2_out = 3'b100;
  			Mem_op3_out = p_op3;
-			mem_ready = p_mem_ready;
+			mem_ready = 0;//p_mem_ready;
+			Mem_regWrite_out = p_regWrite;
+			Mem_regWriteDouble_out = p_regWriteDouble;
 			end
 	endcase
 
 end
+function bit store_op(bit [1:0] op, bit [5:0] op3);
+	if (op == 2'b11) begin
+		// store instructions
+		if (op3 == `STB || op3 == `STH || op3 == `ST || op3 == `STD) begin
+			return 1;
+		end
+	end
+	return 0;
+endfunction
+
+function bit load_op(bit [1:0] op, bit [5:0] op3);
+	if (op == 2'b01) begin
+		return 1;
+		// load instructions
+		if (op3 == `LDSB || op3 == `LDSH || op3 == `LDUB || op3 == `LDUH || op3 == `LD || op3 == `LDD) begin
+			return 1;
+		end
+	end
+	return 0;
+endfunction
+
+function bit store_t(bit [5:0] op3);
+	if (op3 == `STB)
+		return 2'b00;
+	if (op3 == `STH)
+		return 2'b01;
+	if (op3 == `ST)
+		return 2'b10;
+	if (op3 == `STD)
+		return 2'b11;
+	return 2'b10;
+endfunction
+
+
+
 endmodule		
