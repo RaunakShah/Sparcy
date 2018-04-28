@@ -1,4 +1,4 @@
-module Arbiter 
+module Arbiter
 
 // inputs: from i cache and d cache; from ram
 // outputs: to ram; forward to both caches
@@ -83,7 +83,7 @@ always_comb begin
 				n_state = STATEI;
 				end
 			end
-			end	
+			end
 		STATEA: begin
 			if (ic_reqcyc) begin
 				bus_reqcyc = ic_reqcyc;
@@ -124,7 +124,7 @@ always_comb begin
 				ic_reqack = 0;
 				n_state = STATEB;
 			end
-			else begin	
+			else begin
 				if (ic_reqcyc) begin
 					bus_reqcyc = ic_reqcyc;
 					bus_req = ic_req;
@@ -149,21 +149,11 @@ always_comb begin
 end
 
 always_ff @(posedge clk) begin
-	if (reset) 
+	if (reset)
 		p_state <= STATEI;
 	else
 		p_state <= n_state;
 end
-
-
-
-
-
-
-
-
-
-
 
 
 /*

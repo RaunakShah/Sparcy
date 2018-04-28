@@ -26,36 +26,50 @@ logic [31:0] valB;
 // default, pass dummy
 always_comb begin
 	// if no op => sethi 000000 in rd == 00000. pass output to mem which will do nothing
+	ALU_mux_sel_out = 0;
+	ALU_target_address_out = 1;
+
 	if (ALU_i_in)
 		valB = ALU_simm_13;
 	else
 		valB = ALU_valB_in;
+
 	if (ALU_op_in == 2'b10) begin // format 3 instructions
-		if (ALU_op3_in == ADD) begin  // ADD
+		if (ALU_op3_in == `ADD) begin  // ADD
 			ALU_res_out = ALU_valA_in + valB;
 		end // ADD
-		if (ALU_op3_in == SUB) begin // sub
+		if (ALU_op3_in == `SUB) begin // sub
 		  ALU_res_out = ALU_valA_in - valB;
 		end // sub
-		if(ALU_op3_in == AND) begin
+		if(ALU_op3_in == `AND) begin
 			ALU_res_out = ALU_valA_in & valB;
 		end
-		if(ALU_op3_in == OR) begin
+		if(ALU_op3_in == `OR) begin
 			ALU_res_out = ALU_valA_in | valB;
 		end
-		if(ALU_op3_in == XOR) begin
+		if(ALU_op3_in == `XOR) begin
 			ALU_res_out = ALU_valA_in ^ valB;
 		end
-		if(ALU_op3_in == XNOR) begin
+		if(ALU_op3_in == `XNOR) begin
 			ALU_res_out = ALU_valA_in ~^ valB;
 		end
-		if(ALU_op3_in == UMUL || ALU_op3_in == SMUL) begin
+		if(ALU_op3_in == `UMUL || ALU_op3_in == `SMUL) begin
 			ALU_res_out = ALU_valA_in * valB;
 		end
-		if(ALU_op3_in == UDIV || ALU_op3_in == SDIV) begin
+		if(ALU_op3_in == `UDIV || ALU_op3_in == `SDIV) begin
 			ALU_res_out = ALU_valA_in / valB;
 		end
+		if(ALU_op3_in == `JMPL || ALU_op3_in == `RETT) begin
+			ALU_target_address_out = ALU_valA_in + valB;
+			ALU_mux_sel_out = 1;
+		end
+		if(ALU_op3_in == `CALL) begin
+			ALU_mux_sel_out = 1;
+			ALU_target_address_out = ALU_PC_in + ((ALU_imm22_in << 9) >> 2);
 	end
+	//for Load/Store
+	ALU_target_address_out = ALU_valA_in + valB;
+
 
 end
 

@@ -2,6 +2,7 @@
 `define __alu__ops
 
 // macro definitions for op3
+//define for CALL before using
 
 `define AND 6'b000001 // need to change this one too
 `define ANDcc 6'b010001
