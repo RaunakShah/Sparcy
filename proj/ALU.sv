@@ -17,8 +17,9 @@ module ALU
 	input [29:0] ALU_disp30_in,
 	output [31:0] ALU_target_address_out,
 	output ALU_mux_sel_out
-	input clk, 
+	input clk,
 	input reset,
+	input PSR_in,//PSR's carry bit needs to be added here
 	input ALU_icc_n_in, ALU_icc_z_in, ALU_icc_v_in, ALU_icc_c_in,
 	input ALU_icc_n_out, ALU_icc_z_out, ALU_icc_v_out, ALU_icc_c_out
 
@@ -67,7 +68,7 @@ always_comb begin
 		if (ALU_op3_in == `ANDcc) begin
 			ALU_res_out = ALU_valA_in & valB;
 			ALU_icc_z_out = ALU_res_out?0:1;
-			ALU_icc_n_out = ALU_res_out[31]?1:0; 
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
 			ALU_icc_c_out = 0;
 			ALU_icc_v_out = 0;
 		end
@@ -76,7 +77,7 @@ always_comb begin
 		if (ALU_op3_in == `ANDNcc) begin
 			ALU_res_out = ALU_valA_in & (~valB);
 			ALU_icc_z_out = ALU_res_out?0:1;
-			ALU_icc_n_out = ALU_res_out[31]?1:0; 
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
 			ALU_icc_c_out = 0;
 			ALU_icc_v_out = 0;
 		end
@@ -85,7 +86,7 @@ always_comb begin
 		if (ALU_op3_in == `ORcc) begin
 			ALU_res_out = ALU_valA_in | valB;
 			ALU_icc_z_out = ALU_res_out?0:1;
-			ALU_icc_n_out = ALU_res_out[31]?1:0; 
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
 			ALU_icc_c_out = 0;
 			ALU_icc_v_out = 0;
 		end
@@ -94,7 +95,7 @@ always_comb begin
 		if (ALU_op3_in == `ORNcc) begin
 			ALU_res_out = ALU_valA_in | (~valB);
 			ALU_icc_z_out = ALU_res_out?0:1;
-			ALU_icc_n_out = ALU_res_out[31]?1:0; 
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
 			ALU_icc_c_out = 0;
 			ALU_icc_v_out = 0;
 		end
@@ -103,7 +104,7 @@ always_comb begin
 		if (ALU_op3_in == `XORcc) begin
 			ALU_res_out = ALU_valA_in ^ valB;
 			ALU_icc_z_out = ALU_res_out?0:1;
-			ALU_icc_n_out = ALU_res_out[31]?1:0; 
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
 			ALU_icc_c_out = 0;
 			ALU_icc_v_out = 0;
 		end
@@ -112,34 +113,49 @@ always_comb begin
 		if (ALU_op3_in == `XNORcc) begin
 			ALU_res_out = ALU_valA_in ^ (~valB);
 			ALU_icc_z_out = ALU_res_out?0:1;
-			ALU_icc_n_out = ALU_res_out[31]?1:0; 
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
 			ALU_icc_c_out = 0;
 			ALU_icc_v_out = 0;
 		end
 		if (ALU_op3_in == `ADD)
 			ALU_res_out = ALU_valA_in + valB;
 		if (ALU_op3_in == `ADDcc)
-			// TODO
 			ALU_res_out = ALU_valA_in + valB;
+			ALU_icc_z_out = ALU_res_out?0:1;
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
+			ALU_icc_c_out = 0;
+			ALU_icc_v_out = 0;
 		if (ALU_op3_in == `ADDX)
 			// TODO
-			ALU_res_out = ALU_valA_in + valB;
+			ALU_res_out = ALU_valA_in + valB + PSR_in;
 		if (ALU_op3_in == `ADDXcc)
 			// TODO
-			ALU_res_out = ALU_valA_in + valB;
+			ALU_res_out = ALU_valA_in + valB + PSR_in;
+			ALU_icc_z_out = ALU_res_out?0:1;
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
+			ALU_icc_c_out = 0;
+			ALU_icc_v_out = 0;
 		if (ALU_op3_in == `SUB)
 			ALU_res_out = ALU_valA_in - valB;
 		if (ALU_op3_in == `SUBcc)
 			// TODO
 			ALU_res_out = ALU_valA_in - valB;
+			ALU_icc_z_out = ALU_res_out?0:1;
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
+			ALU_icc_c_out = 0;
+			ALU_icc_v_out = 0;
 		if (ALU_op3_in == `SUBX)
 			// TODO
-			ALU_res_out = ALU_valA_in - valB;
+			ALU_res_out = ALU_valA_in - valB - PSR_in;
 		if (ALU_op3_in == `SUBXcc)
 			// TODO
-			ALU_res_out = ALU_valA_in - valB;
-	end		
-		
+			ALU_res_out = ALU_valA_in - valB - PSR_in;
+			ALU_icc_z_out = ALU_res_out?0:1;
+			ALU_icc_n_out = ALU_res_out[31]?1:0;
+			ALU_icc_c_out = 0;
+			ALU_icc_v_out = 0;
+	end
+
 
 
 
@@ -186,7 +202,7 @@ end
 
 
 endmodule
-		
+
 
 
 
