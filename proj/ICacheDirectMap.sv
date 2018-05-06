@@ -46,7 +46,9 @@ module ICacheDirectMap
   localparam LINE_SIZE = WORD_SIZE * WORDS_PER_LINE;
   localparam LINE_SIZE_BITS = LINE_SIZE * 8;
 
-  logic [511:0] write_data_sram, out_data_sram;
+  logic [511:0] write_data_sram;
+  logic [511:0] w;
+  logic [0:511] out_data_sram;
   logic [15:0] n_data_write;
   logic n_tag_write, n_dirty_write;
   logic [53:0] out_tag_sram, out_tag;
@@ -76,7 +78,7 @@ always_comb begin
 	n_proc_data_out = p_proc_data_out;
 	n_respack = 0;
 	n_tag_write = 0;
-	n_data_write = 0; n_dirty_write = 0; write_data_sram = 0;
+	n_data_write = 0; n_dirty_write = 0; write_data_sram = 0; w = 0;
 	case (p_state)
 		STATEA:	begin
 			if (proc_req == 1) begin
@@ -96,6 +98,7 @@ always_comb begin
 
 				n_ack = 1;
 				n_proc_data_out = out_data_sram[proc_word_select*32 +: 32];
+				//$display("instruction: %h", out_data_sram[proc_word_select*32 +: 32]);
 				n_state = STATEA;
 			end
 			else begin // miss	
@@ -127,7 +130,10 @@ always_comb begin
 				//$display("got respcyc");
 				n_counter = p_counter + 1;
 				n_respack = 1;
-				write_data_sram = bus_resp << (p_counter*64);
+				w = bus_resp << (p_counter*64);
+				//write_data_sram = changeEndian(w);
+				write_data_sram = {bus_resp[31:0], bus_resp[63:32]} << (p_counter*64);
+				//write_data_sram = {{(p_counter*64){1b'0}}, bus_resp, {((7-p_counter)*64){1'b0}}};
 				n_data_write = 3 << (p_counter*2);
 				//$display("pcounter %h writedata %h ndatawrite %h", p_counter, write_data_sram, n_data_write);
 				if (p_counter < 7) begin
@@ -182,6 +188,13 @@ end
   assign bus_reqtag = p_reqtag;
   assign bus_reqcyc = p_reqcyc;
   assign bus_respack = p_respack;
+
+
+function [511:0] changeEndian([511:0] w);
+	logic [511:0] write;
+	write = {w[31:0], w[63:32], w[95:64], w[127:96], w[159:128], w[191:160], w[223:192], w[255:224], w[287:256], w[319:288], w[351:320], w[383:352], w[415:384], w[447:416], w[479:448], w[511:480]};
+	return write;
+endfunction
 
 endmodule    
     
