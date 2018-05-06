@@ -10,7 +10,11 @@ module IFIDReg
 	input [INST_SIZE-1:0] inst,
 	output [PC_SIZE-1:0] IFID_PCplus4_out,
 	output [INST_SIZE-1:0]inst_decode,
-	output IFID_bubble_out
+	output IFID_bubble_out,
+	input [4:0] ID_regD_out,
+	input [4:0] EX_regD_out,
+	input [4:0] Mem_regD_out,
+	input id_ready
 );
 
 always_ff @(posedge clk) begin
@@ -19,12 +23,11 @@ always_ff @(posedge clk) begin
 		inst_decode <= 0;
 	end
 	else begin
-//		if (inst == 32'hf0f0f0f0)
-//			IFID_bubble_out = 1;
-//		else
-//			IFID_bubble_out = 0;
+		// NOTE: if registers match and regfile write, stall
+		if (id_ready) begin
 		IFID_PCplus4_out <= IFID_PCplus4_in;
 		inst_decode <= inst;
+		end
 	end
 end
 

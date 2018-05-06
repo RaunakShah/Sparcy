@@ -40,20 +40,16 @@ module IDEXReg
 	input IDEX_regWriteDouble_in,
 	output IDEX_regWriteDouble_out,
 	input ex_ready,
-	input IDEX_icc_n_in,
-	input IDEX_icc_z_in,
-	input IDEX_icc_v_in,
-	input IDEX_icc_c_in,
+	input [3:0] IDEX_icc_in,
 	input [4:0] IDEX_cwp_in,
 	input [31:0] IDEX_wim_in,
 	input [31:0] IDEX_Y_in,
-	output IDEX_icc_n_out,
-	output IDEX_icc_z_out,
-	output IDEX_icc_v_out,
-	output IDEX_icc_c_out,
+	output [3:0] IDEX_icc_out,
 	output [4:0] IDEX_cwp_out,
 	output [31:0] IDEX_wim_out,
-	output [31:0] IDEX_Y_out
+	output [31:0] IDEX_Y_out,
+	input IDEX_icc_write_in, IDEX_Y_write_in,
+	output IDEX_icc_write_out, IDEX_Y_write_out
 );
 
 always_ff @(posedge clk) begin
@@ -74,13 +70,12 @@ always_ff @(posedge clk) begin
 		IDEX_disp30_out <= 0;
 		IDEX_regWrite_out <= 0;
 		IDEX_regWriteDouble_out <= 0;
-		IDEX_icc_n_out <= 0;
-		IDEX_icc_z_out <= 0;
-		IDEX_icc_v_out <= 0;
-		IDEX_icc_c_out <= 0;
+		IDEX_icc_out <= 0;
 		IDEX_cwp_out <= 0;
 		IDEX_wim_out <= 0;
 		IDEX_Y_out <= 0;
+		IDEX_icc_write_out <= 0;
+		IDEX_Y_write_out <= 0;
 	end
 	else begin
 		if (ex_ready) begin
@@ -100,13 +95,12 @@ always_ff @(posedge clk) begin
 			IDEX_disp30_out <= IDEX_disp30_in ;
 			IDEX_regWrite_out <= IDEX_regWrite_in;
 			IDEX_regWriteDouble_out <= IDEX_regWriteDouble_in;
-			IDEX_icc_n_out <= IDEX_icc_n_in;
-			IDEX_icc_z_out <= IDEX_icc_z_in;
-			IDEX_icc_v_out <= IDEX_icc_v_in;
-			IDEX_icc_c_out <= IDEX_icc_c_in;
+			IDEX_icc_out <= IDEX_icc_in;
 			IDEX_cwp_out <= IDEX_cwp_in;
 			IDEX_wim_out <= IDEX_wim_in;
 			IDEX_Y_out <= IDEX_Y_in;
+			IDEX_icc_write_out <= IDEX_icc_write_in;
+			IDEX_Y_write_out <= IDEX_Y_write_in;
 		end
 	end
 end

@@ -78,14 +78,17 @@ always_comb begin
 					n_state = STATEC;
 				end
 				else begin
-			/*		if (p_inst[31:30] == 2'b01  && p_inst[24:22] == 3'b001)
+					// check if branch/call/jump
+					if ((p_inst[31:30] == 2'b00  && p_inst[24:22] == 3'b010) || (p_inst[31:30] == 2'b01) || (p_inst[31:30] == 2'b10 && p_inst[24:19] == 6'b111000))
 						n_b = 1;
 					else
 						n_b = 0;
 					if (p_b == 1)
 						n_state = STATES;
-					else
-			*/			n_state = STATEA;	
+					//	n_state = STATEA;
+					else begin
+						n_state = STATEA;	
+					end
 					//n_state = STATES;	
 				end
 			end
@@ -98,27 +101,31 @@ always_comb begin
 			if (id_ready == 0) 
 				n_state = STATEC;
 			else begin
-				if (p_inst[31:30] == 2'b01  && p_inst[24:22] == 3'b001)
+				// check if branch/call/jump
+				if ((p_inst[31:30] == 2'b00  && p_inst[24:22] == 3'b010) || (p_inst[31:30] == 2'b01) || (p_inst[31:30] == 2'b10 && p_inst[24:19] == 6'b111000)) 
 					n_b = 1;
 				else
 					n_b = 0;
 				if (p_b == 1)
 					n_state = STATES;
-				else
+					//n_state = STATEA;
+				else begin
 					n_state = STATEA;
+				end
 			
 			end
 			end
 		STATES: begin
+			// stall for one cycle before going to A
 			n_pc = p_pc;
 			n_counter = p_counter + 1;
-			if (p_counter == 0) begin
-				n_inst = 32'h01000000;
-				n_state = STATES;
-			end
-			else begin
+		//	if (p_counter == 0) begin
+		//		n_inst = 32'h01000000;
+		//		n_state = STATES;
+		//	end
+		//	else begin
 				n_state = STATEA;
-			end
+		//	end
 			end
 	endcase
 end  
@@ -126,7 +133,7 @@ end
 // register
 always_ff @(posedge clk, negedge clk) begin
 	if (reset) begin
-		p_pc <= entry;
+		p_pc <= 0;
 		p_state <= STATEA;
 		p_ic_req <= 0;
 		p_inst <= 32'h01000000;
@@ -157,26 +164,26 @@ always_comb begin
 	ic_req = p_ic_req;
 	ic_line_addr = p_pc[63:6];
 	ic_word_select = p_pc[5:2];	
-	IF_PCplus4_out = p_pc;
 	case (p_state)
 		STATEA: begin
+			IF_PCplus4_out = p_pc;
 			inst = p_inst;
+			$display("PC: %h", p_pc);
+			$display("inst: %h", p_inst);
 			if_ready = 1;
 			end
 		STATES: begin
-			inst = p_inst;
+			IF_PCplus4_out = p_pc;//0;
+			inst = 32'h01000000;//p_inst;
 			if_ready = 0;
 			end
 		default: begin
-//			IF_PCplus4_out = 64'hffffffffffffffff;
-			inst = 32'h01000000; // stall for now
+			IF_PCplus4_out = p_pc;
+			inst = 32'h01000000;
 			if_ready = 0;
 			end
 	endcase
 end
-//assign inst = (ic_ack)?ic_data_out:0;
-//assign PCplus4 = (ic_ack)?p_pc_from_mux:0;
-//assign PCplus4 = (ic_ack || p_state == STATES)?(p_pc + 4):64'hffffffff;
 endmodule    
     
     

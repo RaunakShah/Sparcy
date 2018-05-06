@@ -13,7 +13,9 @@ module WB
 	output [63:0] WB_data_out,
 	output [4:0] WB_regD_out,
 	output WB_reg_en,
-	output WB_regDouble_en
+	output WB_regDouble_en, WB_Y_en, WB_icc_en,
+	input WB_Y_write_in, WB_icc_write_in,
+	input [3:0] WB_icc_in, WB_icc_out
 );
 
 
@@ -23,13 +25,29 @@ always_comb begin
 		WB_regDouble_en = 0;
 		WB_data_out = 0;
 		WB_regD_out = 0;
+		WB_Y_en = 0;
 	end
 	else begin
 		// if load, data == load data in else data = alures in
 		WB_reg_en = WB_regWrite_in;
 		WB_regDouble_en = WB_regWriteDouble_in;
-		WB_data_out = is_load_op(WB_op_in)?WB_load_data_in:WB_alures_in;
+		WB_data_out = WB_alures_in;
+		if (is_load_op(WB_op_in)) begin
+			if (WB_op3_in == `LDSB)
+				WB_data_out = $signed(WB_load_data_in[7:0]);	
+			if (WB_op3_in == `LDSH)
+				WB_data_out = $signed(WB_load_data_in[15:0]);	
+			if (WB_op3_in == `LDUB)
+				WB_data_out = WB_load_data_in[7:0];	
+			if (WB_op3_in == `LDUH)
+				WB_data_out = WB_load_data_in[15:0];	
+			if (WB_op3_in == `LD)
+				WB_data_out = WB_load_data_in[31:0];	
+			if (WB_op3_in == `LDD)
+				WB_data_out = WB_load_data_in;	
+		end	
 		WB_regD_out = WB_regD_in;
+		WB_Y_en = WB_Y_write_in;
 	end
 end
 

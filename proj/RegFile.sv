@@ -24,18 +24,9 @@ module RegFile
 	input [4:0] wr_reg,
 	input reg_writeDouble_en,
 	// icc o/ps, i/ps and write enables
-	output icc_n_out,
-	output icc_z_out,
-	output icc_v_out,
-	output icc_c_out,
-	input icc_n_in,
-	input icc_z_in,
-	input icc_c_in,
-	input icc_v_in,
-	input icc_n_en,
-	input icc_z_en,
-	input icc_c_en,
-	input icc_v_en,
+	output [3:0] icc_out,
+	input [3:0] icc_in,
+	input icc_en,
 	output [4:0] cwp_out,
 	input cwp_inc,
 	input cwp_dec,
@@ -54,10 +45,7 @@ logic [(2**REG_BITS_SIZE)-1:0] GlobalGeneralRegister [8];
 // logic [(2**REG_BITS_SIZE)-1:0] PSR;
 logic [3:0] PSR_impl;
 logic [3:0] PSR_ver;
-logic PSR_icc_n;
-logic PSR_icc_z;
-logic PSR_icc_v;
-logic PSR_icc_c;
+logic [3:0] PSR_icc;
 logic [5:0] PSR_reserved;
 logic PSR_EC;
 logic PSR_EF;
@@ -73,15 +61,12 @@ integer i;
 always_ff @(posedge clk, negedge clk) begin
         if (reset) begin
             	for (i = 0; i < 512; i += 1)
-                	GeneralRegister[i] = 10;
+                	GeneralRegister[i] = 0;
 		for (i = 0; i < 512; i += 1)
-			GlobalGeneralRegister[i] = 10;
+			GlobalGeneralRegister[i] = 0;
 	    	PSR_impl <= 4'b1111;
 		PSR_ver <= 4'b1111;
-		PSR_icc_n <= 1'b0;
-		PSR_icc_z <= 1'b0;
-		PSR_icc_v <= 1'b0;
-		PSR_icc_c <= 1'b0;
+		PSR_icc <= 4'b1111;
  		PSR_reserved <= 6'b000000;
 		PSR_EC <= 1'b0;
 		PSR_EF <= 1'b0;
@@ -91,49 +76,65 @@ always_ff @(posedge clk, negedge clk) begin
 		PSR_ET <= 0;
 		PSR_CWP <= 5'b00000;
 		WIM <= 0; 
-		Y <= 0;
+		Y <= 32'hffffffff;
         end
         else begin
 		// if (clk) write to reg
 		if (clk) begin
 			if (reg_write_en) begin
-				GeneralRegister[wr_reg] <= data[31:0];
-				if (reg_writeDouble_en)
-					GeneralRegister[wr_reg+1] <= data[63:32];
+				// if 0-7, take from global
+				// else take from ((wrreg-8) + 16*cwp) mod (16*32)
+				if (wr_reg <= 7) begin
+					if (wr_reg != 0)
+						GlobalGeneralRegister[wr_reg] = data[31:0];
+					if (reg_writeDouble_en) 
+						GlobalGeneralRegister[wr_reg+1] = data[63:32];
+				end
+				else begin
+					GeneralRegister[((wr_reg-8)+(16*PSR_CWP)) % (16*32)] = data[31:0];
+					if (reg_writeDouble_en)
+						GeneralRegister[((wr_reg+1-8)+(16*PSR_CWP)) % (16*32)] = data[63:32];
+				//GeneralRegister[wr_reg] <= data[31:0];
+				//if (reg_writeDouble_en)
+				//	GeneralRegister[wr_reg+1] <= data[63:32];
+				end
 			end
-			val1 <= 0;
-			val2 <= 0;
-			val3 <= 0;
-			if (icc_n_en)
-				PSR_icc_n <= icc_n_in;
-			if (icc_z_en)
-				PSR_icc_z <= icc_z_in;
-			if (icc_c_en)
-				PSR_icc_c <= icc_c_in;
-			if (icc_v_en)
-				PSR_icc_v <= icc_v_in;
-			if (cwp_inc)
-				PSR_CWP <= PSR_CWP+1;
-			if (cwp_dec)
-				PSR_CWP <= PSR_CWP-1;
+			if (icc_en)
+				PSR_icc <= icc_in;
 			if (et_inc)
 				PSR_ET <= 1;
 			if (et_dec)
 				PSR_ET <= 0;
 			if (Y_en)
-				Y <= Y_in;
-			val1 <= 0;
-			val2 <= 0;
-			val3 <= 0;
+				Y <= data[63:32];
+		// remove later
+//			val1 <= 0;
+//			val2 <= 0;
+//			val3 <= 0;
+//			icc_out <= 4'b0000;
 		end
 		if (!clk) begin
-			val1 <= GeneralRegister[rs1];
-			val2 <= GeneralRegister[rs2];
-			val3 <= {GeneralRegister[rd+1], GeneralRegister[rd]};
-			icc_n_out <= PSR_icc_n; 
-			icc_z_out <= PSR_icc_z;
-			icc_v_out <= PSR_icc_v;
-			icc_c_out <= PSR_icc_c;
+			if (rs1 <= 7)
+				val1 <= GlobalGeneralRegister[rs1];
+			else
+				val1 <= GeneralRegister[((rs2-8)+(16*PSR_CWP))%(16*32)];
+			if (rs2 <= 7)
+				val2 <= GlobalGeneralRegister[rs2];
+			else
+				val2 <= GeneralRegister[((rs2-8)+(16*PSR_CWP))%(16*32)];
+			if (rd <= 7)
+				val3 <= {GlobalGeneralRegister[rd+1],GlobalGeneralRegister[rd]};
+			else
+				val3 <= {GeneralRegister[((rd+1-8)+(16*PSR_CWP))%(16*32)], GeneralRegister[((rd-8)+(16*PSR_CWP))%(16*32)]};
+
+			//val1 <= GeneralRegister[rs1];
+			//val2 <= GeneralRegister[rs2];
+			//val3 <= {GeneralRegister[rd+1], GeneralRegister[rd]};
+			if (cwp_inc)
+				PSR_CWP <= (PSR_CWP+1) % 32;
+			if (cwp_dec)
+				PSR_CWP <= (PSR_CWP-1) % 32;
+			icc_out <= PSR_icc; 
 			cwp_out <= PSR_CWP;
 			wim_out <= WIM;
 			Y_out <= Y;

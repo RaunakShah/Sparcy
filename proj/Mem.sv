@@ -31,8 +31,12 @@ module Mem
 	output [4:0] Mem_p_regD_out,
 	output Mem_p_regWrite_out,
 	output Mem_p_regWriteDouble_out,
-	input Mem_icc_n_in, Mem_icc_z_in, Mem_icc_v_in, Mem_icc_c_in,
-	output Mem_icc_n_out, Mem_icc_z_out, Mem_icc_v_out, Mem_icc_c_out
+	input [3:0] Mem_icc_in,
+	output [3:0] Mem_icc_out,
+	input Mem_icc_write_in, Mem_Y_write_in,
+	output Mem_icc_write_out, Mem_p_iccWrite_out, Mem_Y_write_out, Mem_p_yWrite_out,
+	input [31:0] Mem_Y_in,
+	output [31:0] Mem_Y_out
 );
 	
 
@@ -62,7 +66,9 @@ logic n_regWrite, p_regWrite;
 logic n_regWriteDouble, p_regWriteDouble;
 logic [2:0] n_byte_offset, p_byte_offset;
 logic [1:0] n_store_type, p_store_type;
-logic n_n, p_n, n_z, p_z, n_c, p_c, n_v, p_v;
+logic [3:0] n_icc, p_icc;
+logic n_icc_write, p_icc_write, n_y_write, p_y_write;
+logic [31:0] n_y, p_y;
 always_comb begin
 	n_dc_line_addr = p_dc_line_addr;//Mem_alures_in[63:6];
 	n_dc_word_select = p_dc_word_select;//Mem_alures_in[:2];
@@ -71,6 +77,9 @@ always_comb begin
 	n_mem_ready = p_mem_ready;//0;
 	n_byte_offset = p_byte_offset;
 	n_store_type = p_store_type;
+	n_icc_write = p_icc_write;
+	n_y = p_y;
+	n_y_write = p_y_write;
 	case (p_state) // NOTE: only needs to go to b if load or store.
 		STATEA: begin
 			n_dc_line_addr = Mem_alures_in[63:6];
@@ -84,12 +93,12 @@ always_comb begin
 			n_regd = Mem_regD_in;
 			n_regWrite = Mem_regWrite_in;
 			n_regWriteDouble = Mem_regWriteDouble_in;
-			n_n = Mem_icc_n_in;
-			n_z = Mem_icc_z_in;
-			n_v = Mem_icc_v_in;
-			n_c = Mem_icc_c_in;
+			n_icc = Mem_icc_in;
+			n_icc_write = Mem_icc_write_in;
+			n_y_write = Mem_Y_write_in;
 			n_alures = Mem_alures_in;
 			n_load_data = 0;
+			n_y = Mem_Y_in;
 			if (load_op(Mem_op_in, Mem_op3_in) || store_op(Mem_op_in, Mem_op3_in)) begin 
 				// load/store op
 				n_state = STATEB;
@@ -118,10 +127,10 @@ always_comb begin
 			n_op3 = p_op3;//Mem_op3_in;
 			n_regWrite = p_regWrite;
 			n_regWriteDouble = p_regWriteDouble;
-			n_n = p_n;
-			n_z = p_z;
-			n_v = p_v;
-			n_c = p_c;
+			n_icc = p_icc;
+			n_icc_write = p_icc_write;
+			n_y_write = p_y_write;
+			n_y = p_y;
 			if (dc_ack) begin
 				n_dc_req = 0;
 				n_load_data = dc_data_from_cache;
@@ -158,10 +167,10 @@ always_ff @(posedge clk, negedge clk) begin
 		p_regWrite <= 0;
 		p_regWriteDouble <= 0;
 		p_store_type <= 0;
-		p_n <= 0;
-		p_z <= 0;
-		p_c <= 0;
-		p_v <= 0;
+		p_icc <= 0;
+		p_icc_write <= 0;
+		p_y <= 0;
+		p_y_write <= 0;
 	end
 	else begin
 		if (!clk) begin
@@ -190,10 +199,10 @@ always_ff @(posedge clk, negedge clk) begin
 		p_regWrite <= n_regWrite;
 		p_regWriteDouble <= n_regWriteDouble;
 		p_store_type <= n_store_type;
-		p_n <= n_n;
-		p_z <= n_z;
-		p_v <= n_v;
-		p_c <= n_c;
+		p_icc <= n_icc;
+		p_icc_write <= n_icc_write;
+		p_y <= n_y;
+		p_y_write <= n_y_write;
 		end
 	end
 end
@@ -216,10 +225,12 @@ always_comb begin
 	Mem_regWriteDouble_out = p_regWriteDouble;
 	Mem_alures_out = p_alures;
 	Mem_load_data_out = p_load_data;
-	Mem_icc_n_out = p_n;
-	Mem_icc_z_out = p_z;
-	Mem_icc_v_out = p_v;
-	Mem_icc_c_out = p_c;
+	Mem_icc_out = p_icc;
+	Mem_icc_write_out = p_icc_write;
+	Mem_p_iccWrite_out = n_icc_write;
+	Mem_p_yWrite_out = n_y_write;
+	Mem_Y_out = p_y;
+	Mem_Y_write_out = p_y_write;
 	case (p_state)
 		STATEA: begin
 			Mem_regD_out = p_regd;
