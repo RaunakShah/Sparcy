@@ -29,7 +29,7 @@ module InstructionDecode
 	output [4:0] rd,
 	output [29:0] disp30,
 	input ex_ready,
-	input WB_reg_en,
+	input WB_reg_en, WB_regDouble_en,
 	input [63:0] WB_data_out,
 	input [4:0] WB_regD_out,
 	input [4:0] IDEX_rd_out,
@@ -77,7 +77,7 @@ logic n_id_write, p_id_write;
 logic p_regWrite, n_regWrite, n_regWriteDouble, p_regWriteDouble, p_icc_write, n_icc_write, p_y_write, n_y_write;
 logic cwp_inc, cwp_dec;
 
-RegFile regis (.clk(clk), .reset(reset), .rs1(inst[18:14]), .rs2(inst[4:0]), .val1(valA), .val2(valB), .val3(valD), .rd(inst[29:25]), .reg_write_en(WB_reg_en), .data(WB_data_out), .wr_reg(WB_regD_out), .icc_in(ID_icc_in), .icc_en(ID_icc_en), .cwp_inc(cwp_inc), .cwp_dec(cwp_dec), .et_inc(et_inc), .et_dec(et_dec), .Y_in(Y_in), .Y_en(Y_en), .icc_out(ID_icc_out),  .cwp_out(cwp_out), .wim_out(wim_out), .Y_out(Y_out));
+RegFile regis (.clk(clk), .reset(reset), .rs1(n_inst[18:14]), .rs2(n_inst[4:0]), .val1(valA), .val2(valB), .val3(valD), .rd(n_inst[29:25]), .reg_write_en(WB_reg_en), .data(WB_data_out), .wr_reg(WB_regD_out), .icc_in(ID_icc_in), .icc_en(ID_icc_en), .cwp_inc(cwp_inc), .cwp_dec(cwp_dec), .et_inc(et_inc), .et_dec(et_dec), .Y_in(Y_in), .Y_en(Y_en), .icc_out(ID_icc_out),  .cwp_out(cwp_out), .wim_out(wim_out), .Y_out(Y_out), .reg_writeDouble_en(WB_regDouble_en));
 
 
 
@@ -123,7 +123,7 @@ always_comb begin
 			end
 			else begin 	
 			// check for dependancies
-			if (instruction_dependancy(inst[18:14], inst[4:0], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || instruction_dependancy(inst[18:14], inst[4:0], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || cc_dep(inst[31:30], inst[24:22], inst[24:19], IDEX_icc_write) || cc_dep(inst[31:30], inst[24:22], inst[24:19], EXMem_icc_write) || Y_dep(inst[31:30], inst[24:19], IDEX_Y_write, EXMem_Y_write)) begin
+			if (instruction_dependancy(inst[18:14], inst[4:0], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || instruction_dependancy(inst[18:14], inst[4:0], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || cc_dep(inst[31:30], inst[24:22], inst[24:19], IDEX_icc_write) || cc_dep(inst[31:30], inst[24:22], inst[24:19], EXMem_icc_write) || Y_dep(inst[31:30], inst[24:19], IDEX_Y_write, EXMem_Y_write) || instruction_dependancy(inst[18:14], inst[4:0], MemWB_regD_out, MemWB_regWrite, MemWB_regWriteDouble) || store_dep(inst[31:30], inst[24:19], inst[29:25], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || store_dep(inst[31:30], inst[24:19], inst[29:25], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || store_dep(inst[31:30], inst[24:19], inst[29:25], MemWB_regD_out, MemWB_regWrite, MemWB_regWriteDouble)) begin
 				ID_PCplus4_out = 0;
 				//valA = 0;
 				//valB = 0;
@@ -220,7 +220,8 @@ always_comb begin
 			end
 			end
 		STATES: begin
-			if (instruction_dependancy(p_inst[18:14], p_inst[4:0], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || instruction_dependancy(p_inst[18:14], p_inst[4:0], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], IDEX_icc_write) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], EXMem_icc_write) || Y_dep(p_inst[31:30], p_inst[24:19], IDEX_Y_write, EXMem_Y_write)) begin
+			//if (instruction_dependancy(p_inst[18:14], p_inst[4:0], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || instruction_dependancy(p_inst[18:14], p_inst[4:0], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], IDEX_icc_write) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], EXMem_icc_write) || Y_dep(p_inst[31:30], p_inst[24:19], IDEX_Y_write, EXMem_Y_write) || instruction_dependancy(p_inst[18:14], p_inst[4:0], MemWB_regD_out, MemWB_regWrite, MemWB_regWriteDouble)) begin
+			if (instruction_dependancy(p_inst[18:14], p_inst[4:0], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || instruction_dependancy(p_inst[18:14], p_inst[4:0], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], IDEX_icc_write) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], EXMem_icc_write) || Y_dep(p_inst[31:30], p_inst[24:19], IDEX_Y_write, EXMem_Y_write) || instruction_dependancy(p_inst[18:14], p_inst[4:0], MemWB_regD_out, MemWB_regWrite, MemWB_regWriteDouble) || store_dep(p_inst[31:30], p_inst[24:19], p_inst[29:25], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || store_dep(p_inst[31:30], p_inst[24:19], p_inst[29:25], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || store_dep(p_inst[31:30], p_inst[24:19], p_inst[29:25], MemWB_regD_out, MemWB_regWrite, MemWB_regWriteDouble)) begin
 				ID_PCplus4_out = 0;
 				//valA = 0;
 				//valB = 0;
@@ -239,7 +240,6 @@ always_comb begin
 				ID_regWriteDouble_out = 0;
 				ID_icc_write_out = 0;
 				ID_Y_write_out = 0;
-				n_state = STATES;
 				n_state = STATES;
 			end
 			else begin
@@ -380,6 +380,32 @@ function bit Y_dep(bit [1:0] op, bit [5:0] op3, exwrite, memwrite);
 	end
 	return 0;
 endfunction
+
+function bit store_dep(bit [1:0] op, bit [5:0] op3, bit [4:0] rs, bit [4:0] rd, bit write, bit writeDouble);
+	if (op == 2'b11) begin
+		if ((op3 == `STB || op3 == `STH || op3 == `ST)) begin
+			if (((rs == rd) && write) || ((rs == rd+1) && writeDouble)) 
+				return 1;
+		end
+		if (op3 == `STD) begin
+			if (write) begin
+				if ((rs == rd) || (rs+1 == rd))
+					return 1;
+			end
+			if (writeDouble) begin
+				if ((rs == rd+1) || (rs+1 == rd+1))
+					return 1;
+			end
+		end
+	end
+	return 0;
+endfunction
+
+
+
+
+
+			
 
 endmodule    
 		

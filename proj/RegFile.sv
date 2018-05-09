@@ -62,7 +62,7 @@ always_ff @(posedge clk, negedge clk) begin
         if (reset) begin
             	for (i = 0; i < 512; i += 1)
                 	GeneralRegister[i] = 0;
-		for (i = 0; i < 512; i += 1)
+		for (i = 0; i < 8; i += 1)
 			GlobalGeneralRegister[i] = 0;
 	    	PSR_impl <= 4'b1111;
 		PSR_ver <= 4'b1111;
@@ -74,7 +74,7 @@ always_ff @(posedge clk, negedge clk) begin
 		PSR_S <= 1'b0;
 		PSR_PS <= 1'b0;
 		PSR_ET <= 0;
-		PSR_CWP <= 5'b00000;
+		PSR_CWP <= 5'b00001;
 		WIM <= 0; 
 		Y <= 32'hffffffff;
         end
@@ -84,6 +84,8 @@ always_ff @(posedge clk, negedge clk) begin
 			if (reg_write_en) begin
 				// if 0-7, take from global
 				// else take from ((wrreg-8) + 16*cwp) mod (16*32)
+				//$display("REG: writing %ld", data);
+				//$display("REG: add %ld", wr_reg);
 				if (wr_reg <= 7) begin
 					if (wr_reg != 0)
 						GlobalGeneralRegister[wr_reg] = data[31:0];
@@ -107,17 +109,26 @@ always_ff @(posedge clk, negedge clk) begin
 				PSR_ET <= 0;
 			if (Y_en)
 				Y <= data[63:32];
+			if (cwp_inc)
+				PSR_CWP <= (PSR_CWP+1) % 32;
+			if (cwp_dec) begin
+				$display("new registers");
+				PSR_CWP <= (PSR_CWP-1) % 32;
+			end
 		// remove later
-//			val1 <= 0;
-//			val2 <= 0;
-//			val3 <= 0;
-//			icc_out <= 4'b0000;
+			val1 <= 0;
+			val2 <= 0;
+			val3 <= 0;
+			icc_out <= PSR_icc; 
+			cwp_out <= PSR_CWP;
+			wim_out <= WIM;
+			Y_out <= Y;
 		end
 		if (!clk) begin
 			if (rs1 <= 7)
 				val1 <= GlobalGeneralRegister[rs1];
 			else
-				val1 <= GeneralRegister[((rs2-8)+(16*PSR_CWP))%(16*32)];
+				val1 <= GeneralRegister[((rs1-8)+(16*PSR_CWP))%(16*32)];
 			if (rs2 <= 7)
 				val2 <= GlobalGeneralRegister[rs2];
 			else
@@ -130,10 +141,6 @@ always_ff @(posedge clk, negedge clk) begin
 			//val1 <= GeneralRegister[rs1];
 			//val2 <= GeneralRegister[rs2];
 			//val3 <= {GeneralRegister[rd+1], GeneralRegister[rd]};
-			if (cwp_inc)
-				PSR_CWP <= (PSR_CWP+1) % 32;
-			if (cwp_dec)
-				PSR_CWP <= (PSR_CWP-1) % 32;
 			icc_out <= PSR_icc; 
 			cwp_out <= PSR_CWP;
 			wim_out <= WIM;

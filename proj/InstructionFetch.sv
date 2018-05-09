@@ -142,7 +142,7 @@ always_ff @(posedge clk, negedge clk) begin
 	end
 	else begin
 		if (!clk) begin
-			if (n_ic_req && ic_ack) begin
+			if (/*n_ic_req &&*/ ic_ack) begin
 				p_ic_req <= 0;
 			end
 			else begin 
@@ -162,8 +162,8 @@ end
 
 always_comb begin
 	ic_req = p_ic_req;
-	ic_line_addr = p_pc[63:6];
-	ic_word_select = p_pc[5:2];	
+	ic_line_addr = {44'h00000000000, n_pc[19:6]};//n_pc[63:6];
+	ic_word_select = n_pc[5:2];	
 	case (p_state)
 		STATEA: begin
 			IF_PCplus4_out = p_pc;

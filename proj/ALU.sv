@@ -64,7 +64,7 @@ always_comb begin
 			v = ALU_icc_in[1];
 			z = ALU_icc_in[2];
 			n = ALU_icc_in[3];
-			ALU_target_address_out = ALU_PC_in + (4*($signed(ALU_imm22_in)));
+			ALU_target_address_out = ALU_PC_in + (4*(32'(signed'(ALU_imm22_in))));
 			if (ALU_cond_in == `BA) begin
 				ALU_mux_sel_out = 1;
 			end
@@ -164,7 +164,7 @@ always_comb begin
 		if (ALU_op3_in == `SRL)
 			ALU_res_out = ALU_valA_in >> valB[4:0];
 		if (ALU_op3_in == `SRA)
-			ALU_res_out = $signed(ALU_valA_in) >>> valB[4:0];
+			ALU_res_out = 32'(signed'(ALU_valA_in)) >>> valB[4:0];
 		if (ALU_op3_in == `AND)
 			ALU_res_out = ALU_valA_in & valB;
 		if (ALU_op3_in == `ANDcc) begin

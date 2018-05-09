@@ -81,7 +81,6 @@ void System::console() {
 }
 
 void System::tick(int clk) {
-    
     if (top->reset && top->bus_reqcyc) {
         cerr << "Sending a request on RESET. Ignoring..." << endl;
         return;
@@ -111,6 +110,7 @@ void System::tick(int clk) {
     dramsim->update();    
     if (!tx_queue.empty() && top->bus_respack) tx_queue.pop_front();
     if (!tx_queue.empty()) {
+    	//cout << "response\n";  
         top->bus_respcyc = 1;
         top->bus_resp = tx_queue.begin()->first;
         top->bus_resptag = tx_queue.begin()->second;
@@ -122,11 +122,15 @@ void System::tick(int clk) {
     }
 
     if (top->bus_reqcyc) {
+    	//cout << "response2\n";  
         cmd = (top->bus_reqtag >> 8) & 0xf;
+    	//cout << "response3 to req " << std::hex << top->bus_req << endl;  
         if (rx_count) {
             switch(cmd) {
             case MEMORY:
+    	//cout << "response4 to req " << std::hex << top->bus_req << endl;  
                 *((uint64_t*)(&ram[((xfer_addr&(~63))+((xfer_addr + ((8-rx_count)*8))&63))])) = cse502_be64toh(top->bus_req);    // critical word first
+    	//cout << "response5 to req " << std::hex << top->bus_req << endl;  
                 break;
             case MMIO:
                 assert(xfer_addr < ramsize);
@@ -158,7 +162,9 @@ void System::tick(int clk) {
             
         switch(cmd) {
         case MEMORY:
+    	//cout << "response6\n";  
             xfer_addr = top->bus_req;
+    	//cout << "response7\n";  
             assert(!(xfer_addr & 7));
             if (addr_to_tag.find(xfer_addr)!=addr_to_tag.end()) {
                 cerr << "Access for " << std::hex << xfer_addr << " already outstanding. Ignoring..." << endl;
@@ -167,7 +173,9 @@ void System::tick(int clk) {
                     dramsim->addTransaction(isWrite, xfer_addr)
                 );
                 //cerr << "add transaction " << std::hex << xfer_addr << " on tag " << top->bus_reqtag << endl;
+    	//cout << "response8\n";  
                 if (!isWrite) addr_to_tag[xfer_addr] = top->bus_reqtag;
+    	//cout << "response9\n";  
             }
             break;
 

@@ -1,0 +1,13 @@
+# build artifacts
+*.exe
+*.o
+obj_dir/
+*.asm
+
+# other files
+*~
+*.tgz
+*.pgp
+*.vcd
+*.vis
+

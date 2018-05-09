@@ -88,7 +88,7 @@ logic exc_out;
 logic c_out;
 logic [31:0] if_inst_out;
 logic [10:0] res;
-logic [31:0] EX_alures_out, EXMem_alures_out;
+logic [63:0] EX_alures_out, EXMem_alures_out;
 assign target = reset?0:entry;
 logic ic_reqcyc_out;
 logic [63:0] ic_req_out;
@@ -104,7 +104,7 @@ logic [1:0] EXMem_op_out;
 logic [2:0] EXMem_op2_out;
 logic [5:0] EXMem_op3_out;
 logic [63:0] EXMem_valD_out;
-logic [31:0] Mem_alures_out;
+logic [63:0] Mem_alures_out;
 logic [31:0] Mem_load_data_out;
 logic [4:0] Mem_regD_out;
 logic [1:0] Mem_op_out;
@@ -139,7 +139,7 @@ logic [4:0] WB_regD_out;
 
 //NextInstruction #(64) nextinst (.clk(clk), .reset(reset), .ni_PCplus4_in(next_inst), .entry(entry), .NI_PC_out(inst), .target(EXMem_target_out), .mux_en(EXMem_mux_sel_out), .if_ready(if_ready), .nPC_out(nPC_out), .nPC_in(nPC_out));
 //$display("target = %d", target);
-nPC npc (.clk(clk), .reset(reset), .target(EXMem_target_out), .mux_en(EXMem_mux_sel_out), .entry(entry), .if_ready(if_ready), .nPC_out(nPC_out), .nPC_in(nPC_out));
+nPC npc (.clk(clk), .reset(reset), .target(EX_target_out), .mux_en(EX_mux_sel_out), .entry(entry), .if_ready(if_ready), .nPC_out(nPC_out), .nPC_in(nPC_out));
 
 PC pc (.clk(clk), .reset(reset), .PC_in(nPC_out), .PC_out(inst), .if_ready(if_ready));
 
@@ -156,7 +156,7 @@ IFIDReg #(64, 32) ifidpipeline (.clk(clk), .reset(reset), .IFID_PCplus4_in(next_
 logic [3:0] ID_icc_out;
 logic ID_icc_write_out, ID_Y_write_out;
 logic [31:0] ID_Y_out;
-InstructionDecode #(64, 32) idstage (.clk(clk), .reset(reset), .ID_PCplus4_in(IFID_PCplus4_out), .inst(inst_decode), .id_ready(id_ready), .ID_PCplus4_out(ID_PCplus4_out), .valA(valA), .valB(valB), .a(a), .op3(op3), .i(i), .imm13(imm13), .disp22(disp22), .op(op), .cond(cond), .op2(op2), .rd(rd), .disp30(disp30), .ex_ready(ex_ready), .valD(valD), .WB_reg_en(WB_reg_en), .WB_data_out(WB_data_out), .WB_regD_out(WB_regD_out), .IDEX_rd_out(EX_p_regD_out), .EXMem_regD_out(Mem_p_regD_out), .MemWB_regD_out(MemWB_regD_out), .IDEX_regWrite(EX_p_regWrite_out), .EXMem_regWrite(Mem_p_regWrite_out), .MemWB_regWrite(MemWB_regWrite_out), .ID_regWrite_out(ID_regWrite_out), .ID_regWriteDouble_out(ID_regWriteDouble_out), .IDEX_regWriteDouble(EX_p_regWriteDouble_out), .EXMem_regWriteDouble(Mem_p_regWriteDouble_out), .MemWB_regWriteDouble(MemWB_regWriteDouble_out), .ID_icc_out(ID_icc_out), .ID_icc_write_out(ID_icc_write_out), .IDEX_icc_write(EX_p_iccWrite_out), .EXMem_icc_write(Mem_p_iccWrite_out), .Y_out(ID_Y_out), .ID_Y_write_out(ID_Y_write_out), .IDEX_Y_write(EX_p_yWrite_out), .EXMem_Y_write(Mem_p_yWrite_out), .ID_icc_in(WB_icc_out), .ID_icc_en(WB_icc_en), .Y_en(WB_Y_en));
+InstructionDecode #(64, 32) idstage (.clk(clk), .reset(reset), .ID_PCplus4_in(IFID_PCplus4_out), .inst(inst_decode), .id_ready(id_ready), .ID_PCplus4_out(ID_PCplus4_out), .valA(valA), .valB(valB), .a(a), .op3(op3), .i(i), .imm13(imm13), .disp22(disp22), .op(op), .cond(cond), .op2(op2), .rd(rd), .disp30(disp30), .ex_ready(ex_ready), .valD(valD), .WB_reg_en(WB_reg_en), .WB_data_out(WB_data_out), .WB_regD_out(WB_regD_out), .IDEX_rd_out(EX_p_regD_out), .EXMem_regD_out(Mem_p_regD_out), .MemWB_regD_out(WB_regD_out), .IDEX_regWrite(EX_p_regWrite_out), .EXMem_regWrite(Mem_p_regWrite_out), .MemWB_regWrite(WB_reg_en), .ID_regWrite_out(ID_regWrite_out), .ID_regWriteDouble_out(ID_regWriteDouble_out), .IDEX_regWriteDouble(EX_p_regWriteDouble_out), .EXMem_regWriteDouble(Mem_p_regWriteDouble_out), .MemWB_regWriteDouble(MemWB_regWriteDouble_out), .ID_icc_out(ID_icc_out), .ID_icc_write_out(ID_icc_write_out), .IDEX_icc_write(EX_p_iccWrite_out), .EXMem_icc_write(Mem_p_iccWrite_out), .Y_out(ID_Y_out), .ID_Y_write_out(ID_Y_write_out), .IDEX_Y_write(EX_p_yWrite_out), .EXMem_Y_write(Mem_p_yWrite_out), .ID_icc_in(WB_icc_out), .ID_icc_en(WB_icc_en), .Y_en(WB_Y_en), .WB_regDouble_en(WB_regDouble_en));
 /*	input cwp_inc,
 	input cwp_dec,
 	input et_inc,
@@ -213,8 +213,8 @@ logic [3:0] MemWB_icc_out;
 logic MemWB_icc_write_out, MemWB_Y_write_out;
 MemWBReg memwbreg ( .clk(clk), .reset(reset), .MemWB_alures_in(Mem_alures_out), .MemWB_load_data_in(Mem_load_data_out), .MemWB_regD_in(Mem_regD_out), .MemWB_op_in(Mem_op_out), .MemWB_op2_in(Mem_op2_out), .MemWB_op3_in(Mem_op3_out), .MemWB_alures_out(MemWB_alures_out), .MemWB_load_data_out(MemWB_load_data_out), .MemWB_regD_out(MemWB_regD_out), .MemWB_op_out(MemWB_op_out), .MemWB_op2_out(MemWB_op2_out), .MemWB_op3_out(MemWB_op3_out), .MemWB_regWrite_in(Mem_regWrite_out), .MemWB_regWrite_out(MemWB_regWrite_out), .MemWB_regWriteDouble_in(Mem_regWriteDouble_out), .MemWB_regWriteDouble_out(MemWB_regWriteDouble_out), .MemWB_icc_in(Mem_icc_out), .MemWB_icc_out(MemWB_icc_out), .MemWB_icc_write_in(Mem_icc_write_out), .MemWB_icc_write_out(MemWB_icc_write_out), .MemWB_Y_in(Mem_Y_out), .MemWB_Y_out(MemWB_Y_out), .MemWB_Y_write_in(Mem_Y_write_out), .MemWB_Y_write_out(MemWB_Y_write_out));
 
-logic WB_Y_en, WB_icc_en;  
+logic WB_Y_en, WB_icc_en, WB_regDouble_en;  
 logic [3:0] WB_icc_out;
-WB wb ( .clk(clk), .reset(reset), .WB_alures_in(MemWB_alures_out), .WB_load_data_in(MemWB_load_data_out), .WB_regD_in(MemWB_regD_out), .WB_op_in(MemWB_op_out), .WB_op2_in(MemWB_op2_out), .WB_op3_in(MemWB_op3_out), .WB_data_out(WB_data_out), .WB_regD_out(WB_regD_out), .WB_reg_en(WB_reg_en), .WB_regWrite_in(MemWB_regWrite_out), .WB_regWriteDouble_in(MemWB_regWriteDouble_out), .WB_icc_in(MemWB_icc_out), .WB_icc_out(WB_icc_out), .WB_icc_write_in(MemWB_icc_write_out), .WB_icc_en(WB_icc_en), .WB_Y_write_in(MemWB_Y_write_out), .WB_Y_en(WB_Y_en));	
+WB wb ( .clk(clk), .reset(reset), .WB_alures_in(MemWB_alures_out), .WB_load_data_in(MemWB_load_data_out), .WB_regD_in(MemWB_regD_out), .WB_op_in(MemWB_op_out), .WB_op2_in(MemWB_op2_out), .WB_op3_in(MemWB_op3_out), .WB_data_out(WB_data_out), .WB_regD_out(WB_regD_out), .WB_reg_en(WB_reg_en), .WB_regWrite_in(MemWB_regWrite_out), .WB_regWriteDouble_in(MemWB_regWriteDouble_out), .WB_icc_in(MemWB_icc_out), .WB_icc_out(WB_icc_out), .WB_icc_write_in(MemWB_icc_write_out), .WB_icc_en(WB_icc_en), .WB_Y_write_in(MemWB_Y_write_out), .WB_Y_en(WB_Y_en), .WB_regDouble_en(WB_regDouble_en));	
 
 endmodule

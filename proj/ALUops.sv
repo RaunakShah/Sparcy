@@ -95,8 +95,6 @@
 `define STCSR 6'b110101
 `define LDSTUB 6'b001101
 `define SWAP 6'b001111
-`define NOP 2'b00
-`define NOP 2'b100
 `define BA 4'b1000
 `define BN 4'b0000
 `define BNE 4'b1001

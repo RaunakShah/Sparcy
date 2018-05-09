@@ -108,7 +108,8 @@ always_comb begin
 					//$display("writing %h", proc_data_in);
 					//write_data_sram = proc_data_in << (proc_word_select*64);
 					logic [511:0] write_shift; 
-					write_shift = ({proc_data_in[31:0], proc_data_in[63:32]} << (proc_word_select*64));
+					//write_shift = ({proc_data_in[31:0], proc_data_in[63:32]} << (proc_word_select*64));
+					write_shift = proc_data_in << (proc_word_select*64);
 					if (store_type == 2'b00) begin
 						//write_data_sram = (proc_data_in << (proc_word_select*64)) << (proc_byte_offset*8);
 						write_data_sram = write_shift << (proc_byte_offset*8);
@@ -208,7 +209,8 @@ always_comb begin
 				//$display("got respcyc");
 				n_counter = p_counter + 1;
 				n_respack = 1;
-				write_data_sram = {bus_resp[31:0], bus_resp[63:32]} << (p_counter*64);
+				//write_data_sram = {bus_resp[31:0], bus_resp[63:32]} << (p_counter*64);
+				write_data_sram = bus_resp << (p_counter*64);
 				//n_data_write = 3 << (p_counter*2);
 				n_data_write = 255 << (p_counter*8);
 				//$display("pcounter %h writedata %h ndatawrite %h", p_counter, write_data_sram, n_data_write);

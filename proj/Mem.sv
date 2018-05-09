@@ -82,7 +82,7 @@ always_comb begin
 	n_y_write = p_y_write;
 	case (p_state) // NOTE: only needs to go to b if load or store.
 		STATEA: begin
-			n_dc_line_addr = Mem_alures_in[63:6];
+			n_dc_line_addr = {44'h00000000000, Mem_alures_in[19:6]};//Mem_alures_in[63:6];
 			n_dc_word_select = Mem_alures_in[5:3];
 			n_byte_offset = Mem_alures_in[2:0];
 			n_dc_data_to_cache = Mem_valD_in;// rd value  
@@ -108,6 +108,30 @@ always_comb begin
 				end
 				else
 					n_dc_read_write_n = 1;	
+				dc_req = 1;
+				dc_line_addr = {44'h00000000000, Mem_alures_in[19:6]};//Mem_alures_in[63:6];
+				dc_word_select = Mem_alures_in[5:3];
+				dc_byte_offset = Mem_alures_in[2:0];
+				dc_data_to_cache = Mem_valD_in;// rd value  
+				store_type = store_t(Mem_op3_in);
+				dc_read_write_n = n_dc_read_write_n;
+				Mem_p_regD_out = Mem_regD_in;
+				Mem_p_regWrite_out = Mem_regWrite_in;
+				Mem_p_regWriteDouble_out = Mem_regWriteDouble_in;
+				Mem_p_iccWrite_out = Mem_icc_write_in;
+				Mem_p_yWrite_out = Mem_Y_write_in;
+				Mem_regWrite_out = Mem_regWrite_in;
+				Mem_regWriteDouble_out = Mem_regWriteDouble_in;
+				Mem_alures_out = Mem_alures_in;
+				Mem_load_data_out = 0;
+				Mem_icc_out = Mem_icc_in;
+				Mem_icc_write_out = Mem_icc_write_in;
+				Mem_Y_out = Mem_Y_in;
+				Mem_Y_write_out = Mem_Y_write_in;
+				Mem_regD_out = 5'b00000;
+				Mem_op_out = 2'b00;
+				Mem_op2_out = 3'b100;
+				Mem_op3_out = 6'b100000;
 				n_mem_ready = 0;
 			end
 			else begin
@@ -116,6 +140,30 @@ always_comb begin
 				n_dc_req = 0;
 				n_mem_ready = 1;
 				n_dc_read_write_n = 1;	
+				dc_req = 0;
+				dc_line_addr = {44'h00000000000, Mem_alures_in[19:6]};//Mem_alures_in[63:6];
+				dc_word_select = Mem_alures_in[5:3];
+				dc_byte_offset = Mem_alures_in[2:0];
+				dc_data_to_cache = Mem_valD_in;// rd value  
+				store_type = store_t(Mem_op3_in);
+				dc_read_write_n = n_dc_read_write_n;
+				Mem_p_regD_out = Mem_regD_in;
+				Mem_p_regWrite_out = Mem_regWrite_in;
+				Mem_p_regWriteDouble_out = Mem_regWriteDouble_in;
+				Mem_p_iccWrite_out = Mem_icc_write_in;
+				Mem_p_yWrite_out = Mem_Y_write_in;
+				Mem_regWrite_out = Mem_regWrite_in;
+				Mem_regWriteDouble_out = Mem_regWriteDouble_in;
+				Mem_alures_out = Mem_alures_in;
+				Mem_load_data_out = 0;
+				Mem_icc_out = Mem_icc_in;
+				Mem_icc_write_out = Mem_icc_write_in;
+				Mem_Y_out = Mem_Y_in;
+				Mem_Y_write_out = Mem_Y_write_in;
+				Mem_regD_out = Mem_regD_in;
+				Mem_op_out = Mem_op_in;
+				Mem_op2_out = Mem_op2_in;
+				Mem_op3_out = Mem_op3_in;
 			end
 			end
 		STATEB: begin
@@ -131,17 +179,45 @@ always_comb begin
 			n_icc_write = p_icc_write;
 			n_y_write = p_y_write;
 			n_y = p_y;
+			Mem_p_regD_out = n_regd;
+			Mem_p_regWrite_out = n_regWrite;
+			Mem_p_regWriteDouble_out = n_regWriteDouble;
+			Mem_p_iccWrite_out = n_icc_write;
+			Mem_p_yWrite_out = n_y;
+			dc_line_addr = p_dc_line_addr;
+			dc_word_select = p_dc_word_select;
+			dc_byte_offset = p_byte_offset;
+			dc_read_write_n = p_dc_read_write_n;
+			store_type = p_store_type;
+			Mem_regWrite_out = p_regWrite;
+			Mem_regWriteDouble_out = p_regWriteDouble;
+			Mem_alures_out = p_alures;
+			Mem_load_data_out = dc_data_from_cache;
+			Mem_icc_out = p_icc;
+			Mem_icc_write_out = p_icc_write;
+			Mem_Y_out = p_y;
+			Mem_Y_write_out = p_y_write;
+			dc_data_to_cache = p_dc_data_to_cache;
 			if (dc_ack) begin
 				n_dc_req = 0;
 				n_load_data = dc_data_from_cache;
 				n_mem_ready = 1;
 				n_state = STATEA;
+				dc_req = 0;
+				Mem_regD_out = p_regd;
+				Mem_op_out = p_op;
+				Mem_op2_out = p_op2;
+				Mem_op3_out = p_op3;
 				//$display("mem: state b to a");
 			end
 			else begin
 				n_dc_req = 1;
 				n_mem_ready = 0;
 				n_state = STATEB;
+				Mem_regD_out = 5'b00000;
+				Mem_op_out = 2'b00;
+				Mem_op2_out = 3'b100;
+				Mem_op3_out = 6'b100000;
 				//$display("mem: state b to b");
 			end
 			end
@@ -210,6 +286,7 @@ end
 
 
 always_comb begin
+/*
 	dc_req = p_dc_req;
 	dc_line_addr = p_dc_line_addr;
 	dc_word_select = p_dc_word_select;
@@ -220,6 +297,8 @@ always_comb begin
 	Mem_p_regD_out = n_regd; // for dep
 	Mem_p_regWrite_out = n_regd;
 	Mem_p_regWriteDouble_out = n_regd;
+	Mem_p_iccWrite_out = n_icc_write;
+	Mem_p_yWrite_out = n_y_write;
 	mem_ready = p_mem_ready;//1;
 	Mem_regWrite_out = p_regWrite;
 	Mem_regWriteDouble_out = p_regWriteDouble;
@@ -227,22 +306,23 @@ always_comb begin
 	Mem_load_data_out = p_load_data;
 	Mem_icc_out = p_icc;
 	Mem_icc_write_out = p_icc_write;
-	Mem_p_iccWrite_out = n_icc_write;
-	Mem_p_yWrite_out = n_y_write;
 	Mem_Y_out = p_y;
 	Mem_Y_write_out = p_y_write;
-	case (p_state)
+*/	case (p_state)
 		STATEA: begin
-			Mem_regD_out = p_regd;
+/*			Mem_regD_out = p_regd;
 	 		Mem_op_out = p_op;
 	 		Mem_op2_out = p_op2;
  			Mem_op3_out = p_op3;
+*/			
+			mem_ready = 1;
 			end
 		STATEB: begin
-			Mem_regD_out = 5'b00000;
+			/*Mem_regD_out = 5'b00000;
 	 		Mem_op_out = 2'b00;
 	 		Mem_op2_out = 3'b100;
  			Mem_op3_out = p_op3;
+			*/mem_ready = 0;
 			end
 	endcase
 
@@ -269,7 +349,7 @@ function bit load_op(bit [1:0] op, bit [5:0] op3);
 	return 0;
 endfunction
 
-function bit store_t(bit [5:0] op3);
+function bit [1:0]  store_t(bit [5:0] op3);
 	if (op3 == `STB)
 		return 2'b00;
 	if (op3 == `STH)
@@ -278,7 +358,7 @@ function bit store_t(bit [5:0] op3);
 		return 2'b10;
 	if (op3 == `STD)
 		return 2'b11;
-	return 2'b10;
+	return 2'b00;
 endfunction
 
 

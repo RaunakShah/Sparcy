@@ -1,4 +1,4 @@
-module Arbiter
+module Arbiter 
 
 // inputs: from i cache and d cache; from ram
 // outputs: to ram; forward to both caches
@@ -55,6 +55,7 @@ always_comb begin
 	case (p_state)
 		STATEI: begin
 			if (ic_reqcyc) begin
+				$display("CC0: making request for %h", ic_req);
 				bus_reqcyc = ic_reqcyc;
 				bus_req = ic_req;
 				bus_reqtag = ic_reqtag;
@@ -65,6 +66,7 @@ always_comb begin
 			end
 			else begin
 				if (dc_reqcyc) begin
+				$display("DC0: making request for %ld going to B", dc_req);
 					bus_reqcyc = dc_reqcyc;
 					bus_req = dc_req;
 					bus_reqtag = dc_reqtag;
@@ -83,7 +85,7 @@ always_comb begin
 				n_state = STATEI;
 				end
 			end
-			end
+			end	
 		STATEA: begin
 			if (ic_reqcyc) begin
 				bus_reqcyc = ic_reqcyc;
@@ -95,6 +97,7 @@ always_comb begin
 			end
 			else begin
 				if (dc_reqcyc) begin
+				$display("DC: making request for %h", dc_req);
 					bus_reqcyc = dc_reqcyc;
 					bus_req = dc_req;
 					bus_reqtag = dc_reqtag;
@@ -124,8 +127,9 @@ always_comb begin
 				ic_reqack = 0;
 				n_state = STATEB;
 			end
-			else begin
+			else begin	
 				if (ic_reqcyc) begin
+				$display("CC: making request for %h", ic_req);
 					bus_reqcyc = ic_reqcyc;
 					bus_req = ic_req;
 					bus_reqtag = ic_reqtag;
@@ -135,6 +139,7 @@ always_comb begin
 					n_state = STATEA;
 				end
 				else begin
+					$display("going to I");
 					bus_reqcyc = 0;//ic_reqcyc;
 					bus_req = 0;//ic_req;
 					bus_reqtag = 0;//ic_reqtag;
@@ -149,11 +154,21 @@ always_comb begin
 end
 
 always_ff @(posedge clk) begin
-	if (reset)
+	if (reset) 
 		p_state <= STATEI;
 	else
 		p_state <= n_state;
 end
+
+
+
+
+
+
+
+
+
+
 
 
 /*

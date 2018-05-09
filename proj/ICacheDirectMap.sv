@@ -103,6 +103,7 @@ always_comb begin
 			end
 			else begin // miss	
 				n_state = STATED;// TODO clean miss
+				$display("making request for %h", {proc_line_addr, 6'b000000});
 			end
 			
 			end
@@ -131,9 +132,8 @@ always_comb begin
 				n_counter = p_counter + 1;
 				n_respack = 1;
 				w = bus_resp << (p_counter*64);
-				//write_data_sram = changeEndian(w);
-				write_data_sram = {bus_resp[31:0], bus_resp[63:32]} << (p_counter*64);
-				//write_data_sram = {{(p_counter*64){1b'0}}, bus_resp, {((7-p_counter)*64){1'b0}}};
+				//write_data_sram = {bus_resp[31:0], bus_resp[63:32]} << (p_counter*64);
+				write_data_sram = bus_resp << (p_counter*64);
 				n_data_write = 3 << (p_counter*2);
 				//$display("pcounter %h writedata %h ndatawrite %h", p_counter, write_data_sram, n_data_write);
 				if (p_counter < 7) begin

@@ -24,7 +24,7 @@ module dcache_SRAM(
         if (reset) begin
             for (i = 0; i < NUM_ROWS; i += 1)
 //                for (j = 0; j < WIDTH; j += 1)
-			mem[i] = 32'h0000ffff;//3;//512'hffffffff;
+			mem[i] = 32'h0000000f;//3;//512'hffffffff;
             for (i = 0; i < NUM_ROWS; i += 1)
 			$display("initialized %d to %02x", i, mem[i]);// = 1;//512'hffffffff;
         end
@@ -36,7 +36,7 @@ module dcache_SRAM(
             for (i = 0; i < WIDTH/WORD_SIZE; i += 1) begin
                 if (writeEnable[i]) begin
                     mem[writeAddr][i*WORD_SIZE +: WORD_SIZE] <= writeData[i*WORD_SIZE +: WORD_SIZE];
-//			$display("writing %d to %d", writeData[i*WORD_SIZE +: WORD_SIZE], i);
+			$display("writing %h ", writeData[i*WORD_SIZE +: WORD_SIZE]);
                 end
             end
         end

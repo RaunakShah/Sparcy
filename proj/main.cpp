@@ -87,6 +87,7 @@ int main(int argc, char* argv[]) {
 	TICK(); // 1
 	TICK(); // 0
 	TICK(); // 1
+	TICK(); // 1
 	top.reset = 0;
 
 	const char* SHOWCONSOLE = getenv("SHOWCONSOLE");
