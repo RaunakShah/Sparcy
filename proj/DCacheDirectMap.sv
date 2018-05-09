@@ -95,21 +95,24 @@ always_comb begin
 			end
 		STATEB: begin
 			if (out_tag_sram == proc_line_addr[57:4]) begin // hit
-				//$display("out tag sram %d proc line add %d", out_tag_sram, proc_line_addr[57:4]);
-				//$display("data at location %h", out_data_sram);
-				//$display("out data %h", out_data_sram[proc_word_select*32 +: 32]);
-				//$display("proc word data %h",proc_word_select);
-				//$display("cache: b to a");
-
+				logic [63:0] n, b;
 				n_ack = 1;
-				n_proc_data_out = out_data_sram[proc_word_select*64 +: 64];
+				//$display("give back %d", out_data_sram[proc_word_select*64 +: 64]);
+				n = out_data_sram[proc_word_select*64 +: 64];
+				b = ~(proc_byte_offset[2]);
+				n_proc_data_out = n >> (b*32);
+
+				//{n[63:56], n[55:48], n[47:40], n[39:32], n[7:0], n[15:8], n[23:16], n[31:24]};
 				n_state = STATEA;
 				if (proc_read_write_n == 0) begin
-					//$display("writing %h", proc_data_in);
 					//write_data_sram = proc_data_in << (proc_word_select*64);
 					logic [511:0] write_shift; 
+					write_shift = {proc_data_in[39:32], proc_data_in[47:40], proc_data_in[55:48], proc_data_in[63:56], proc_data_in[7:0], proc_data_in[15:8], proc_data_in[23:16], proc_data_in[31:24]} << (proc_word_select*64);
 					//write_shift = ({proc_data_in[31:0], proc_data_in[63:32]} << (proc_word_select*64));
-					write_shift = proc_data_in << (proc_word_select*64);
+					$display("data in %d %d", proc_data_in[63:32], proc_data_in[31:0]);
+					
+				//	write_shift = {proc_data_in[31:24], proc_data_in[23:16], proc_data_in[15:8], proc_data_in[7:0], proc_data_in[63:56], proc_data_in[55:48], proc_data_in[47:40], proc_data_in[39:32]} << (proc_word_select*64);
+					
 					if (store_type == 2'b00) begin
 						//write_data_sram = (proc_data_in << (proc_word_select*64)) << (proc_byte_offset*8);
 						write_data_sram = write_shift << (proc_byte_offset*8);
@@ -123,8 +126,8 @@ always_comb begin
 					end
 					if (store_type == 2'b10) begin
 						//write_data_sram = (proc_data_in << (proc_word_select*64)) << (proc_byte_offset[2]*32);
-						write_data_sram = write_shift << (proc_byte_offset[2]*32);
-						n_data_write = 15 << ({proc_word_select,proc_byte_offset[2], 2'b00});
+						write_data_sram = write_shift << ((proc_byte_offset[2])*32);
+						n_data_write = 15 << ({proc_word_select,(proc_byte_offset[2]), 2'b00});
 					end
 					if (store_type == 2'b11) begin
 						//write_data_sram = (proc_data_in << (proc_word_select*64));
@@ -209,8 +212,8 @@ always_comb begin
 				//$display("got respcyc");
 				n_counter = p_counter + 1;
 				n_respack = 1;
-				//write_data_sram = {bus_resp[31:0], bus_resp[63:32]} << (p_counter*64);
-				write_data_sram = bus_resp << (p_counter*64);
+				write_data_sram = {bus_resp[31:0], bus_resp[63:32]} << (p_counter*64);
+		//		write_data_sram = bus_resp << (p_counter*64);
 				//n_data_write = 3 << (p_counter*2);
 				n_data_write = 255 << (p_counter*8);
 				//$display("pcounter %h writedata %h ndatawrite %h", p_counter, write_data_sram, n_data_write);
