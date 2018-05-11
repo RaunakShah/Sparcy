@@ -15,7 +15,8 @@ module WB
 	output WB_reg_en,
 	output WB_regDouble_en, WB_Y_en, WB_icc_en,
 	input WB_Y_write_in, WB_icc_write_in,
-	input [3:0] WB_icc_in, WB_icc_out
+	input [3:0] WB_icc_in,
+	output [3:0] WB_icc_out
 );
 
 
@@ -26,12 +27,16 @@ always_comb begin
 		WB_data_out = 0;
 		WB_regD_out = 0;
 		WB_Y_en = 0;
+		WB_icc_out = 0;
+		WB_icc_en = 0;
 	end
 	else begin
 		// if load, data == load data in else data = alures in
 		WB_reg_en = WB_regWrite_in;
 		WB_regDouble_en = WB_regWriteDouble_in;
 		WB_data_out = WB_alures_in;
+		WB_icc_out = WB_icc_in;
+		WB_icc_en = WB_icc_write_in;
 		if (is_load_op(WB_op_in)) begin
 			if (WB_op3_in == `LDSB)
 				WB_data_out = 64'(signed'(WB_load_data_in[7:0]));	

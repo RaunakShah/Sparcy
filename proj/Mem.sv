@@ -28,6 +28,7 @@ module Mem
 	input Mem_regWriteDouble_in,
 	output Mem_regWriteDouble_out,
 	output [1:0] store_type,
+	output [1:0] load_type,
 	output [4:0] Mem_p_regD_out,
 	output Mem_p_regWrite_out,
 	output Mem_p_regWriteDouble_out,
@@ -66,6 +67,7 @@ logic n_regWrite, p_regWrite;
 logic n_regWriteDouble, p_regWriteDouble;
 logic [2:0] n_byte_offset, p_byte_offset;
 logic [1:0] n_store_type, p_store_type;
+logic [1:0] n_load_type, p_load_type;
 logic [3:0] n_icc, p_icc;
 logic n_icc_write, p_icc_write, n_y_write, p_y_write;
 logic [31:0] n_y, p_y;
@@ -77,6 +79,7 @@ always_comb begin
 	n_mem_ready = p_mem_ready;//0;
 	n_byte_offset = p_byte_offset;
 	n_store_type = p_store_type;
+	n_load_type = p_load_type;
 	n_icc_write = p_icc_write;
 	n_y = p_y;
 	n_y_write = p_y_write;
@@ -87,6 +90,7 @@ always_comb begin
 			n_byte_offset = Mem_alures_in[2:0];
 			n_dc_data_to_cache = Mem_valD_in;// rd value  
 			n_store_type = store_t(Mem_op3_in);
+			n_load_type = load_t(Mem_op3_in);
 			n_op = Mem_op_in;
 			n_op2 = Mem_op2_in;
 			n_op3 = Mem_op3_in;
@@ -114,6 +118,7 @@ always_comb begin
 				dc_byte_offset = Mem_alures_in[2:0];
 				dc_data_to_cache = Mem_valD_in;// rd value  
 				store_type = store_t(Mem_op3_in);
+				load_type = load_t(Mem_op3_in);
 				dc_read_write_n = n_dc_read_write_n;
 				Mem_p_regD_out = Mem_regD_in;
 				Mem_p_regWrite_out = Mem_regWrite_in;
@@ -146,6 +151,7 @@ always_comb begin
 				dc_byte_offset = Mem_alures_in[2:0];
 				dc_data_to_cache = Mem_valD_in;// rd value  
 				store_type = store_t(Mem_op3_in);
+				load_type = load_t(Mem_op3_in);
 				dc_read_write_n = n_dc_read_write_n;
 				Mem_p_regD_out = Mem_regD_in;
 				Mem_p_regWrite_out = Mem_regWrite_in;
@@ -189,6 +195,7 @@ always_comb begin
 			dc_byte_offset = p_byte_offset;
 			dc_read_write_n = p_dc_read_write_n;
 			store_type = p_store_type;
+			load_type = p_load_type;
 			Mem_regWrite_out = p_regWrite;
 			Mem_regWriteDouble_out = p_regWriteDouble;
 			Mem_alures_out = p_alures;
@@ -243,6 +250,7 @@ always_ff @(posedge clk, negedge clk) begin
 		p_regWrite <= 0;
 		p_regWriteDouble <= 0;
 		p_store_type <= 0;
+		p_load_type <= 0;
 		p_icc <= 0;
 		p_icc_write <= 0;
 		p_y <= 0;
@@ -275,6 +283,7 @@ always_ff @(posedge clk, negedge clk) begin
 		p_regWrite <= n_regWrite;
 		p_regWriteDouble <= n_regWriteDouble;
 		p_store_type <= n_store_type;
+		p_load_type <= n_load_type;
 		p_icc <= n_icc;
 		p_icc_write <= n_icc_write;
 		p_y <= n_y;
@@ -357,6 +366,17 @@ function bit [1:0]  store_t(bit [5:0] op3);
 	if (op3 == `ST)
 		return 2'b10;
 	if (op3 == `STD)
+		return 2'b11;
+	return 2'b00;
+endfunction
+function bit [1:0]  load_t(bit [5:0] op3);
+	if (op3 == `LDSB || op3 == `LDUB)
+		return 2'b00;
+	if (op3 == `LDSH || op3 == `LDUH)
+		return 2'b01;
+	if (op3 == `LD)
+		return 2'b10;
+	if (op3 == `LDD)
 		return 2'b11;
 	return 2'b00;
 endfunction
