@@ -35,11 +35,12 @@ module RegFile
 	output [31:0] wim_out,
 	output [31:0] Y_out,
 	input [31:0] Y_in,
-	input Y_en
+	input Y_en,
+	output [31:0] g1, o0, o1, o2, o3, o4, o5
 	
 );
 localparam NUM_ROWS = (WINDOW_SIZE*NO_OF_REG_WINDOWS);
-logic [(2**REG_BITS_SIZE)-1:0] GeneralRegister [32]; // need to change later
+logic [(2**REG_BITS_SIZE)-1:0] GeneralRegister [512]; // need to change later
 logic [(2**REG_BITS_SIZE)-1:0] GlobalGeneralRegister [8];
 // split PSR into components
 // logic [(2**REG_BITS_SIZE)-1:0] PSR;
@@ -66,7 +67,7 @@ always_ff @(posedge clk, negedge clk) begin
 			GlobalGeneralRegister[i] = 0;
 	    	PSR_impl <= 4'b1111;
 		PSR_ver <= 4'b1111;
-		PSR_icc <= 4'b1111;
+		PSR_icc <= 4'b0000;
  		PSR_reserved <= 6'b000000;
 		PSR_EC <= 1'b0;
 		PSR_EF <= 1'b0;
@@ -109,10 +110,12 @@ always_ff @(posedge clk, negedge clk) begin
 				PSR_ET <= 0;
 			if (Y_en)
 				Y <= data[63:32];
-			if (cwp_inc)
+			if (cwp_inc) begin
+				//$display("old registers");	
 				PSR_CWP <= (PSR_CWP+1) % 32;
+			end
 			if (cwp_dec) begin
-				$display("new registers");
+				//$display("new registers");
 				PSR_CWP <= (PSR_CWP-1) % 32;
 			end
 		// remove later
@@ -123,6 +126,13 @@ always_ff @(posedge clk, negedge clk) begin
 			cwp_out <= PSR_CWP;
 			wim_out <= WIM;
 			Y_out <= Y;
+			g1 <= 0;
+			o0 <= 0;
+			o1 <= 0;
+			o2 <= 0;
+			o3 <= 0;
+			o4 <= 0;
+			o5 <= 0;
 		end
 		if (!clk) begin
 			if (rs1 <= 7)
@@ -137,6 +147,14 @@ always_ff @(posedge clk, negedge clk) begin
 				val3 <= {GlobalGeneralRegister[rd+1],GlobalGeneralRegister[rd]};
 			else
 				val3 <= {GeneralRegister[((rd+1-8)+(16*PSR_CWP))%(16*32)], GeneralRegister[((rd-8)+(16*PSR_CWP))%(16*32)]};
+			g1 <= GlobalGeneralRegister[1];
+			o0 <= GeneralRegister[((16*PSR_CWP))%(16*32)];			
+			o1 <= GeneralRegister[(1+(16*PSR_CWP))%(16*32)];			
+			o2 <= GeneralRegister[(2+(16*PSR_CWP))%(16*32)];			
+			o3 <= GeneralRegister[(3+(16*PSR_CWP))%(16*32)];			
+			o4 <= GeneralRegister[(4+(16*PSR_CWP))%(16*32)];			
+			o5 <= GeneralRegister[(5+(16*PSR_CWP))%(16*32)];			
+			
 
 			//val1 <= GeneralRegister[rs1];
 			//val2 <= GeneralRegister[rs2];

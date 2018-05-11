@@ -1,3 +1,5 @@
+
+import "DPI-C" function int syscall_cse502(input int g1, input int o0, input int o1, input int o2, input int o3, input int o4, input int o5);
 module ALU
 
 (
@@ -21,7 +23,7 @@ module ALU
 	input reset,
 	input [3:0] ALU_icc_in,
 	output [3:0] ALU_icc_out,
-	input [31:0] ALU_Y_in,
+	input [31:0] ALU_Y_in, ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in,
 	output [31:0] ALU_Y_out,
 	output ALU_a_out
 
@@ -72,7 +74,7 @@ always_comb begin
 				ALU_mux_sel_out = 0;
 			end
 			if (ALU_cond_in == `BNE) begin
-				if (!z)	begin
+				if (~z)	begin
 					ALU_mux_sel_out = 1;
 					ALU_a_out = 0;
 				end
@@ -84,7 +86,7 @@ always_comb begin
 				end
 			end
 			if (ALU_cond_in == `BG) begin
-				if (!(z || (n ^ v))) begin
+				if (~(z || (n ^ v))) begin
 					ALU_mux_sel_out = 1;
 					ALU_a_out = 0;
 				end
@@ -96,7 +98,7 @@ always_comb begin
 				end
 			end
 			if (ALU_cond_in == `BGE) begin
-				if (!(n ^ v)) begin		
+				if (~(n ^ v)) begin		
 					ALU_mux_sel_out = 1;
 					ALU_a_out = 0;
 				end
@@ -108,7 +110,7 @@ always_comb begin
 				end
 			end
 			if (ALU_cond_in == `BGU) begin
-				if (!(c || z)) begin		
+				if (~(c || z)) begin		
 					ALU_mux_sel_out = 1;
 					ALU_a_out = 0;
 				end
@@ -120,7 +122,7 @@ always_comb begin
 				end
 			end
 			if (ALU_cond_in == `BCC) begin
-				if (!c) begin		
+				if (~c) begin		
 					ALU_mux_sel_out = 1;
 					ALU_a_out = 0;
 				end
@@ -132,7 +134,7 @@ always_comb begin
 				end
 			end
 			if (ALU_cond_in == `BPOS) begin
-				if (!n) begin		
+				if (~n) begin		
 					ALU_mux_sel_out = 1;
 					ALU_a_out = 0;
 				end
@@ -144,7 +146,7 @@ always_comb begin
 				end
 			end
 			if (ALU_cond_in == `BVC) begin
-				if (!v)	begin
+				if (~v)	begin
 					ALU_mux_sel_out = 1;
 					ALU_a_out = 0;
 				end
@@ -384,6 +386,73 @@ always_comb begin
 			ALU_target_address_out = ALU_valA_in + valB;
 			ALU_res_out = ALU_PC_in;
 			ALU_mux_sel_out = 1;
+		end
+  // function to be called to execute a system call
+		if (ALU_op3_in == 6'b111010) begin
+			c = ALU_icc_in[0];
+			v = ALU_icc_in[1];
+			z = ALU_icc_in[2];
+			n = ALU_icc_in[3];
+			ALU_res_out = 0; //TN
+			if (ALU_cond_in == `TA) begin
+				ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TNE) begin
+				if (~z)
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TE) begin
+				if (z)
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TG) begin
+				if (~(z || (n ^ v)))
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TLE) begin
+				if ((z || (n ^ v)))
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TGE) begin
+				if (~(n ^ v))
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TL) begin
+				if ((n ^ v))
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TGU) begin
+				if (~(c || z))
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TLEU) begin
+				if (c || z)
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TCC) begin
+				if (~c)
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TCS) begin
+				if (c)
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TPOS) begin
+				if (~n)
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TNEG) begin
+				if (n)
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TVC) begin
+				if (~v)
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
+			if (ALU_cond_in == `TVS) begin
+				if (v)
+					ALU_res_out = syscall_cse502(ALU_g1_in, ALU_o0_in, ALU_o1_in, ALU_o2_in, ALU_o3_in, ALU_o4_in, ALU_o5_in);
+			end
 		end
 	end
 end		
