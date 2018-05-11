@@ -12,7 +12,7 @@ module dcache_SRAM(
     parameter WORD_SIZE = 64;
     localparam NUM_ROWS = 2**LOG_NUM_ROWS;
     
-    logic[0:WIDTH-1] mem[NUM_ROWS-1:0];
+    logic[WIDTH-1:0] mem[NUM_ROWS-1:0];
 
     initial begin
         $display("Initializing %0dKB (%0dx%0d) memory", (WIDTH+7)/8 * NUM_ROWS/1024, WIDTH, NUM_ROWS);
@@ -30,13 +30,14 @@ module dcache_SRAM(
         end
         else begin
             // read
-//	$display("write addr %d readAddr = %d read data %d", writeAddr, readAddr, mem[readAddr] );
+	//$display("write addr %d readAddr = %d read data %d", writeAddr, readAddr, mem[readAddr] );
             readData <= mem[readAddr];
             // write
             for (i = 0; i < WIDTH/WORD_SIZE; i += 1) begin
+//		$display("SRAM %d at i %d ", writeData[i*WORD_SIZE +: WORD_SIZE], i);
                 if (writeEnable[i]) begin
                     mem[writeAddr][i*WORD_SIZE +: WORD_SIZE] <= writeData[i*WORD_SIZE +: WORD_SIZE];
-			$display("writing %h ", writeData[i*WORD_SIZE +: WORD_SIZE]);
+//			$display("writing in sram %d i = %d", writeData[i*WORD_SIZE +: WORD_SIZE], i);
                 end
             end
         end

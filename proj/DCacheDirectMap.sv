@@ -27,6 +27,7 @@ module DCacheDirectMap
   input  [LOG_WORDS_PER_LINE-1:0] proc_word_select,
   input  [WORD_SIZE*8-1:0] proc_data_in,
   input  [1:0] store_type,
+  input  [1:0] load_type,
   input  [2:0] proc_byte_offset,
    
   // interface to connect to the bus
@@ -50,7 +51,7 @@ module DCacheDirectMap
 
   logic procline[53:0];	
   logic [511:0] write_data_sram;
-  logic [0:511] out_data_sram;
+  logic [511:0] out_data_sram;
   logic [63:0] n_data_write;
   logic n_tag_write, n_dirty_write;
   logic [53:0] out_tag_sram, out_tag;
@@ -99,35 +100,58 @@ always_comb begin
 				n_ack = 1;
 				//$display("give back %d", out_data_sram[proc_word_select*64 +: 64]);
 				n = out_data_sram[proc_word_select*64 +: 64];
-				b = ~(proc_byte_offset[2]);
-				n_proc_data_out = n >> (b*32);
-
-				//{n[63:56], n[55:48], n[47:40], n[39:32], n[7:0], n[15:8], n[23:16], n[31:24]};
+				//b = ~(proc_byte_offset[2]);
+				//n_proc_data_out = n >> (b*32);
+				if (load_type == 2'b00) begin
+					b = ~(proc_byte_offset[2:0]);
+					n_proc_data_out = n >> (b*8);	
+				end
+				if (load_type == 2'b01) begin
+					b = ~(proc_byte_offset[2:1]);
+					n_proc_data_out = n >> (b*16);	
+				end
+				if (load_type == 2'b10) begin
+					b = ~(proc_byte_offset[2]);
+					n_proc_data_out = n >> (b*32);	
+				end
+				if (load_type == 2'b11) begin
+					n_proc_data_out = {n[31:0], n[63:32]};
+				end
 				n_state = STATEA;
 				if (proc_read_write_n == 0) begin
 					//write_data_sram = proc_data_in << (proc_word_select*64);
 					logic [511:0] write_shift; 
-					write_shift = {proc_data_in[39:32], proc_data_in[47:40], proc_data_in[55:48], proc_data_in[63:56], proc_data_in[7:0], proc_data_in[15:8], proc_data_in[23:16], proc_data_in[31:24]} << (proc_word_select*64);
-					//write_shift = ({proc_data_in[31:0], proc_data_in[63:32]} << (proc_word_select*64));
-					$display("data in %d %d", proc_data_in[63:32], proc_data_in[31:0]);
+						write_shift = ({proc_data_in[31:0], proc_data_in[63:32]} << (proc_word_select*64));
+					//write_shift = {proc_data_in[39:32], proc_data_in[47:40], proc_data_in[55:48], proc_data_in[63:56], proc_data_in[7:0], proc_data_in[15:8], proc_data_in[23:16], proc_data_in[31:24]} << (proc_word_select*64);
+					//$display("data in %d %d", proc_data_in[63:32], proc_data_in[31:0]);
 					
 				//	write_shift = {proc_data_in[31:24], proc_data_in[23:16], proc_data_in[15:8], proc_data_in[7:0], proc_data_in[63:56], proc_data_in[55:48], proc_data_in[47:40], proc_data_in[39:32]} << (proc_word_select*64);
 					
 					if (store_type == 2'b00) begin
 						//write_data_sram = (proc_data_in << (proc_word_select*64)) << (proc_byte_offset*8);
-						write_data_sram = write_shift << (proc_byte_offset*8);
+						logic [2:0] bb, cc;
+				//		write_shift = ({proc_data_in[7:0], proc_data_in[15:8], proc_data_in[23:16], proc_data_in[31:24], proc_data_in[39:32], proc_data_in[47:40], proc_data_in[55:48], proc_data_in[63:32]} << (proc_word_select*64));
+						bb = ~(proc_byte_offset[2:0]);
+				//		write_data_sram = write_shift >> (proc_byte_offset*8);
+						write_data_sram = (write_shift >> ((proc_byte_offset[2])*32)) << (8*bb[1:0]);
 						//w = changeEndian(write_data_sram);
-						n_data_write = 1 << ({proc_word_select,proc_byte_offset});
+						n_data_write = 1 << ({proc_word_select, bb});
 					end
 					if (store_type == 2'b01) begin
 						//write_data_sram = (proc_data_in << (proc_word_select*64)) << (proc_byte_offset[2:1]*16);
-						write_data_sram = write_shift << (proc_byte_offset[2:1]*16);
-						n_data_write = 3 << ({proc_word_select,proc_byte_offset[2:1], 1'b0});
+						logic [1:0] bb;
+						//write_shift = ({proc_data_in[15:0], proc_data_in[31:16], proc_data_in[63:48], proc_data_in[47:32]} << (proc_word_select*64));
+						bb = ~(proc_byte_offset[2:1]);
+						write_data_sram = write_shift >> (proc_byte_offset[2:1]*16);
+						write_data_sram = (write_shift >> ((proc_byte_offset[2])*32)) << (16*bb[0]);
+						n_data_write = 3 << ({proc_word_select, bb, 1'b0});
 					end
 					if (store_type == 2'b10) begin
 						//write_data_sram = (proc_data_in << (proc_word_select*64)) << (proc_byte_offset[2]*32);
-						write_data_sram = write_shift << ((proc_byte_offset[2])*32);
-						n_data_write = 15 << ({proc_word_select,(proc_byte_offset[2]), 2'b00});
+						logic bb;
+						write_data_sram = write_shift >> ((proc_byte_offset[2])*32);
+						bb = ~(proc_byte_offset[2]);
+						n_data_write = 15 << ({proc_word_select, bb, 2'b00});
 					end
 					if (store_type == 2'b11) begin
 						//write_data_sram = (proc_data_in << (proc_word_select*64));
@@ -213,11 +237,11 @@ always_comb begin
 				n_counter = p_counter + 1;
 				n_respack = 1;
 				write_data_sram = {bus_resp[31:0], bus_resp[63:32]} << (p_counter*64);
-		//		write_data_sram = bus_resp << (p_counter*64);
+				write_data_sram = bus_resp << (p_counter*64);
 				//n_data_write = 3 << (p_counter*2);
 				n_data_write = 255 << (p_counter*8);
 				//$display("pcounter %h writedata %h ndatawrite %h", p_counter, write_data_sram, n_data_write);
-				if (p_counter < 7) begin
+				if (p_counter < 8) begin
 					n_state = STATEE;
 				end
 				else begin
@@ -226,7 +250,10 @@ always_comb begin
 				end
 			end	
 			else begin 
-				n_state = STATEE;
+				if (p_counter == 8)
+					n_state = STATEB;
+				else
+					n_state = STATEE;
 			end
 			end
 	endcase

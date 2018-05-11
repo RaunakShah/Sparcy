@@ -168,8 +168,8 @@ always_comb begin
 		STATEA: begin
 			IF_PCplus4_out = p_pc;
 			inst = p_inst;
-			$display("PC: %h", p_pc);
-			$display("inst: %h", p_inst);
+//			$display("PC: %h", p_pc);
+//			$display("inst: %h", p_inst);
 			if_ready = 1;
 			end
 		STATES: begin

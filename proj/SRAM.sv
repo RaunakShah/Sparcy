@@ -12,7 +12,7 @@ module SRAM(
     parameter WORD_SIZE = 64;
     localparam NUM_ROWS = 2**LOG_NUM_ROWS;
     
-    logic[0:WIDTH-1] mem[NUM_ROWS-1:0];
+    logic[WIDTH-1:0] mem[NUM_ROWS-1:0];
 
     initial begin
         $display("Initializing %0dKB (%0dx%0d) memory", (WIDTH+7)/8 * NUM_ROWS/1024, WIDTH, NUM_ROWS);
