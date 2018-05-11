@@ -55,7 +55,7 @@ always_comb begin
 	case (p_state)
 		STATEI: begin
 			if (ic_reqcyc) begin
-				$display("CC0: making request for %h", ic_req);
+				//$display("CC0: making request for %h", ic_req);
 				bus_reqcyc = ic_reqcyc;
 				bus_req = ic_req;
 				bus_reqtag = ic_reqtag;
@@ -66,7 +66,7 @@ always_comb begin
 			end
 			else begin
 				if (dc_reqcyc) begin
-				$display("DC0: making request for %ld going to B", dc_req);
+				//$display("DC0: making request for %ld going to B", dc_req);
 					bus_reqcyc = dc_reqcyc;
 					bus_req = dc_req;
 					bus_reqtag = dc_reqtag;
@@ -96,8 +96,8 @@ always_comb begin
 				n_state = STATEA;
 			end
 			else begin
-				if (dc_reqcyc) begin
-				$display("DC: making request for %h", dc_req);
+/*				if (dc_reqcyc) begin
+				//$display("DC: making request for %h", dc_req);
 					bus_reqcyc = dc_reqcyc;
 					bus_req = dc_req;
 					bus_reqtag = dc_reqtag;
@@ -107,14 +107,14 @@ always_comb begin
 					n_state = STATEB;
 				end
 				else begin
-					bus_reqcyc = 0;//dc_reqcyc;
+*/					bus_reqcyc = 0;//dc_reqcyc;
 					bus_req = 0;//dc_req;
 					bus_reqtag = 0;//dc_reqtag;
 					//bus_respack = ic_respack;
 					dc_reqack = 0;//bus_reqack;
 					ic_reqack = bus_reqack;
 					n_state = STATEI;
-				end
+//				end
 			end
 			end
 		STATEB: begin
@@ -128,8 +128,8 @@ always_comb begin
 				n_state = STATEB;
 			end
 			else begin	
-				if (ic_reqcyc) begin
-				$display("CC: making request for %h", ic_req);
+/*				if (ic_reqcyc) begin
+				//$display("CC: making request for %h", ic_req);
 					bus_reqcyc = ic_reqcyc;
 					bus_req = ic_req;
 					bus_reqtag = ic_reqtag;
@@ -139,7 +139,7 @@ always_comb begin
 					n_state = STATEA;
 				end
 				else begin
-					$display("going to I");
+*/					//$display("going to I");
 					bus_reqcyc = 0;//ic_reqcyc;
 					bus_req = 0;//ic_req;
 					bus_reqtag = 0;//ic_reqtag;
@@ -147,7 +147,7 @@ always_comb begin
 					dc_reqack = bus_reqack;
 					ic_reqack = 0;
 					n_state = STATEI;
-				end
+//				end
 			end
 			end
 		endcase
