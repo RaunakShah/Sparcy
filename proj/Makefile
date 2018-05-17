@@ -3,7 +3,7 @@ include conf/user.mk
 
 .PHONY: all progs run clean submit
 
-RUNELF=$(PWD)/sparc-prog/hw.exe
+RUNELF=$(PWD)/sparc-prog/branches.exe
 TRACE=--trace
 VFILES=$(wildcard *.sv)
 CFILES=$(wildcard *.cpp)

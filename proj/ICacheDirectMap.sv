@@ -53,8 +53,8 @@ module ICacheDirectMap
   logic n_tag_write, n_dirty_write;
   logic [53:0] out_tag_sram, out_tag;
   logic p_reqcyc, n_reqcyc;
-  logic [63:0] p_req, n_req;// = {out_tag_sram + 6'b000000};
-  logic [12:0] p_reqtag, n_reqtag;// = 13'b0000100000000;
+  logic [63:0] p_req, n_req;
+  logic [12:0] p_reqtag, n_reqtag;
   logic [4:0] p_counter, n_counter;
   logic n_ack, p_ack;
   logic n_respack, p_respack;
@@ -69,10 +69,9 @@ module ICacheDirectMap
   // ...
 
 always_comb begin
-	//$display("i cache");
 	n_reqcyc = 0;
-	n_req = 0;//{out_tag_sram + 6'b000000};
-	n_reqtag = p_reqtag;//13'b0000100000000;
+	n_req = 0;
+	n_reqtag = p_reqtag;
 	n_counter = p_counter;
 	n_ack = 0;
 	n_proc_data_out = p_proc_data_out;
@@ -90,19 +89,12 @@ always_comb begin
 			end
 		STATEB: begin
 			if (out_tag_sram == proc_line_addr[57:4]) begin // hit
-				//$display("out tag sram %ld proc line add %ld", out_tag_sram, proc_line_addr[57:4]);
-				//$display("data at location %h", out_data_sram);
-				//$display("out data %h", out_data_sram[proc_word_select*32 +: 32]);
-				//$display("proc word data %h",proc_word_select);
-				
-
 				n_ack = 1;
 				n_proc_data_out = out_data_sram[proc_word_select*32 +: 32];
-				//$display("instruction: %h", out_data_sram[proc_word_select*32 +: 32]);
 				n_state = STATEA;
 			end
 			else begin // miss	
-				n_state = STATED;// TODO clean miss
+				n_state = STATED;
 				//$display("making request for %h", {proc_line_addr, 6'b000000});
 			end
 			
@@ -193,11 +185,6 @@ end
   assign bus_respack = p_respack;
 
 
-function [511:0] changeEndian([511:0] w);
-	logic [511:0] write;
-	write = {w[31:0], w[63:32], w[95:64], w[127:96], w[159:128], w[191:160], w[223:192], w[255:224], w[287:256], w[319:288], w[351:320], w[383:352], w[415:384], w[447:416], w[479:448], w[511:480]};
-	return write;
-endfunction
 
 endmodule    
     

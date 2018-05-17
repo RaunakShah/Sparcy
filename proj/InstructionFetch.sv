@@ -2,9 +2,6 @@
  * Instruction fetch phase
  */
 
-// NOTE: changing stall state of stateb
-// add ready state from decode to fetch
-// need to add a ready output going backwards to mux, to stall fetching of instruction if ifstage is not in state a
 
 module InstructionFetch
 #(
@@ -51,7 +48,6 @@ always_comb begin
 	n_b = p_b;
 	case (p_state)
 		STATEA: begin
-//			n_pc = p_pc+4;
 			n_pc = target;
 			if (n_pc == p_pc && n_pc != 0) begin
 				n_state = STATEA;
@@ -67,7 +63,6 @@ always_comb begin
 		STATEB: begin
 			// create inputs for instruction cache
 			// if ack from cache - set output data, goto statea
-			//n_pc_from_mux = p_pc_from_mux;
 			n_pc = p_pc;
 			if (ic_ack) begin
 				n_ic_req = 0;
@@ -83,13 +78,11 @@ always_comb begin
 						n_b = 1;
 					else
 						n_b = 0;
-					if (p_b == 1)
+					if (p_b == 1) // stall for branch
 						n_state = STATES;
-					//	n_state = STATEA;
 					else begin
 						n_state = STATEA;	
 					end
-					//n_state = STATES;	
 				end
 			end
 			else begin
@@ -162,14 +155,14 @@ end
 
 always_comb begin
 	ic_req = p_ic_req;
-	ic_line_addr = {44'h00000000000, n_pc[19:6]};//n_pc[63:6];
+	ic_line_addr = {40'h0000000000, n_pc[29:6]};//n_pc[63:6];
 	ic_word_select = n_pc[5:2];	
 	case (p_state)
 		STATEA: begin
 			IF_PCplus4_out = p_pc;
 			inst = p_inst;
-//			$display("PC: %h", p_pc);
-//			$display("inst: %h", p_inst);
+			//$display("PC: %h", p_pc);
+			//$display("inst: %h", p_inst);
 			if_ready = 1;
 			end
 		STATES: begin

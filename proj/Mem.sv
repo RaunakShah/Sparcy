@@ -108,7 +108,7 @@ always_comb begin
 				n_state = STATEB;
 				n_dc_req = 1;
 				if (store_op(Mem_op_in, Mem_op3_in)) begin
-					n_dc_read_write_n = 0;// if store, 0
+					n_dc_read_write_n = 0;// if store or swap, 0
 				end
 				else
 					n_dc_read_write_n = 1;	
@@ -117,6 +117,8 @@ always_comb begin
 				dc_word_select = Mem_alures_in[5:3];
 				dc_byte_offset = Mem_alures_in[2:0];
 				dc_data_to_cache = Mem_valD_in;// rd value  
+				if (Mem_op3_in == `LDSTUB)
+					dc_data_to_cache = 64'h1111111111111111;
 				store_type = store_t(Mem_op3_in);
 				load_type = load_t(Mem_op3_in);
 				dc_read_write_n = n_dc_read_write_n;
@@ -295,43 +297,12 @@ end
 
 
 always_comb begin
-/*
-	dc_req = p_dc_req;
-	dc_line_addr = p_dc_line_addr;
-	dc_word_select = p_dc_word_select;
-	dc_byte_offset = p_byte_offset;
-	dc_data_to_cache = p_dc_data_to_cache;
-	dc_read_write_n = p_dc_read_write_n;
-	store_type = p_store_type;
-	Mem_p_regD_out = n_regd; // for dep
-	Mem_p_regWrite_out = n_regd;
-	Mem_p_regWriteDouble_out = n_regd;
-	Mem_p_iccWrite_out = n_icc_write;
-	Mem_p_yWrite_out = n_y_write;
-	mem_ready = p_mem_ready;//1;
-	Mem_regWrite_out = p_regWrite;
-	Mem_regWriteDouble_out = p_regWriteDouble;
-	Mem_alures_out = p_alures;
-	Mem_load_data_out = p_load_data;
-	Mem_icc_out = p_icc;
-	Mem_icc_write_out = p_icc_write;
-	Mem_Y_out = p_y;
-	Mem_Y_write_out = p_y_write;
-*/	case (p_state)
+	case (p_state)
 		STATEA: begin
-/*			Mem_regD_out = p_regd;
-	 		Mem_op_out = p_op;
-	 		Mem_op2_out = p_op2;
- 			Mem_op3_out = p_op3;
-*/			
 			mem_ready = 1;
 			end
 		STATEB: begin
-			/*Mem_regD_out = 5'b00000;
-	 		Mem_op_out = 2'b00;
-	 		Mem_op2_out = 3'b100;
- 			Mem_op3_out = p_op3;
-			*/mem_ready = 0;
+			mem_ready = 0;
 			end
 	endcase
 
@@ -339,7 +310,7 @@ end
 function bit store_op(bit [1:0] op, bit [5:0] op3);
 	if (op == 2'b11) begin
 		// store instructions
-		if (op3 == `STB || op3 == `STH || op3 == `ST || op3 == `STD) begin
+		if (op3 == `STB || op3 == `STH || op3 == `ST || op3 == `STD || op3 == `SWAP) begin
 			return 1;
 		end
 	end
@@ -348,8 +319,6 @@ endfunction
 
 function bit load_op(bit [1:0] op, bit [5:0] op3);
 	if (op == 2'b11) begin
-//	if (op == 2'b01) begin
-//		return 1;
 		// load instructions
 		if (op3 == `LDSB || op3 == `LDSH || op3 == `LDUB || op3 == `LDUH || op3 == `LD || op3 == `LDD) begin
 			return 1;
@@ -359,26 +328,26 @@ function bit load_op(bit [1:0] op, bit [5:0] op3);
 endfunction
 
 function bit [1:0]  store_t(bit [5:0] op3);
-	if (op3 == `STB)
+	if (op3 == `STB || op3 == `LDSTUB)
 		return 2'b00;
 	if (op3 == `STH)
 		return 2'b01;
-	if (op3 == `ST)
+	if (op3 == `ST || op3 == `SWAP)
 		return 2'b10;
 	if (op3 == `STD)
 		return 2'b11;
-	return 2'b00;
+	return 2'b10;
 endfunction
 function bit [1:0]  load_t(bit [5:0] op3);
-	if (op3 == `LDSB || op3 == `LDUB)
+	if (op3 == `LDSB || op3 == `LDUB || op3 == `LDSTUB)
 		return 2'b00;
 	if (op3 == `LDSH || op3 == `LDUH)
 		return 2'b01;
-	if (op3 == `LD)
+	if (op3 == `LD || op3 == `SWAP)
 		return 2'b10;
 	if (op3 == `LDD)
 		return 2'b11;
-	return 2'b00;
+	return 2'b10;
 endfunction
 
 

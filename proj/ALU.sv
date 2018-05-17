@@ -43,7 +43,6 @@ always_comb begin
 	ALU_a_out = ALU_a_in;
 	if (ALU_i_in)
 		valB = 32'(signed'(ALU_simm13_in));
-	//	valB = {{32{ALU_simm13_in[12]}},ALU_simm13_in};
 	else
 		valB = ALU_valB_in;
 	ALU_res_out = ALU_valA_in + valB;
@@ -58,10 +57,10 @@ always_comb begin
 	// Load; Store; Atomic; Swap
 			ALU_res_out = ALU_valA_in + valB;
 	end
-	if (ALU_op_in == 2'b00) begin
+	if (ALU_op_in == 2'b00) begin 
 		if (ALU_op2_in == `SETHI)
 			ALU_res_out = {ALU_imm22_in, 10'b0000000000};
-		if (ALU_op2_in == 3'b010) begin
+		if (ALU_op2_in == 3'b010) begin // branches
 			c = ALU_icc_in[0];
 			v = ALU_icc_in[1];
 			z = ALU_icc_in[2];
@@ -175,6 +174,7 @@ always_comb begin
 			ALU_icc_out = ALU_icc_in;
 			ALU_icc_out[2] = z;
 		end
+		// logical
 		if (ALU_op3_in == `ANDN	)
 			ALU_res_out = ALU_valA_in & (~valB);
 		if (ALU_op3_in == `ANDNcc) begin
@@ -215,6 +215,7 @@ always_comb begin
 			ALU_icc_out = ALU_icc_in;
 			ALU_icc_out[2] = z;
 		end
+		// arithmetic
 		if (ALU_op3_in == `ADD || ALU_op3_in == `SAVE || ALU_op3_in == `RESTORE)
 			ALU_res_out = ALU_valA_in + valB;
 		if (ALU_op3_in == `ADDcc) begin
@@ -240,6 +241,64 @@ always_comb begin
 			ALU_icc_out = {n,z,v,c};
 
 		end
+		if (ALU_op3_in == `TADDcc) begin
+			ALU_res_out = ALU_valA_in + valB;
+			c = ALU_res_out[32];
+			z = ALU_res_out?0:1;
+			n = ALU_res_out[31]?1:0;
+			v = 0;
+			if (ALU_valA_in[0] || ALU_valA_in[1] || valB[0] || valB[1])
+				v = 1;
+			if ((ALU_valA_in[31] == valB[31]) && (ALU_valA_in[31] != ALU_res_out[31]))
+				v = 1;
+			ALU_icc_out = {n,z,v,c};
+		end
+		if (ALU_op3_in == `TADDccTV) begin
+			ALU_res_out = ALU_valA_in + valB;
+			c = ALU_res_out[32];
+			z = ALU_res_out?0:1;
+			n = ALU_res_out[31]?1:0;
+			v = 0;
+			ALU_icc_out = {n,z,v,c};
+			if (ALU_valA_in[0] || ALU_valA_in[1] || valB[0] || valB[1]) begin
+				v = 1;
+				ALU_icc_out = ALU_icc_in;
+			end
+			if ((ALU_valA_in[31] == valB[31]) && (ALU_valA_in[31] != ALU_res_out[31])) begin
+				v = 1;
+				ALU_icc_out = ALU_icc_in;
+			end
+		end
+		if (ALU_op3_in == `TSUBcc) begin
+			ALU_res_out = ALU_valA_in - valB;
+			c = ALU_res_out[32];
+			z = ALU_res_out?0:1;
+			n = ALU_res_out[31]?1:0;
+			v = 0;
+			if (ALU_valA_in[0] || ALU_valA_in[1] || valB[0] || valB[1]) begin
+				v = 1;
+			end
+			if ((ALU_valA_in[31] != valB[31]) && (ALU_valA_in[31] != ALU_res_out[31]))
+				v = 1;
+			ALU_icc_out = {n,z,v,c};
+		end
+		if (ALU_op3_in == `TSUBccTV) begin
+			ALU_res_out = ALU_valA_in - valB;
+			c = ALU_res_out[32];
+			z = ALU_res_out?0:1;
+			n = ALU_res_out[31]?1:0;
+			v = 0;
+			ALU_icc_out = {n,z,v,c};
+			if (ALU_valA_in[0] || ALU_valA_in[1] || valB[0] || valB[1]) begin
+				v = 1;
+				ALU_icc_out = ALU_icc_in;
+			end
+			if ((ALU_valA_in[31] != valB[31]) && (ALU_valA_in[31] != ALU_res_out[31])) begin
+				v = 1;
+				ALU_icc_out = ALU_icc_in;
+			end
+		end
+
 		if (ALU_op3_in == `SUB)
 			ALU_res_out = ALU_valA_in - valB;
 		if (ALU_op3_in == `SUBcc) begin
@@ -283,7 +342,7 @@ always_comb begin
 		if (ALU_op3_in == `UMUL) 
 			ALU_res_out = ALU_valA_in * valB;
 		if (ALU_op3_in == `SMUL) 
-			ALU_res_out = ALU_valA_in * valB;
+			ALU_res_out = 64'(signed'(ALU_valA_in * valB));
 		if (ALU_op3_in == `UMULcc) begin 
 			ALU_res_out = ALU_valA_in * valB;
 			n = ALU_res_out[31]?1:0;
@@ -293,7 +352,7 @@ always_comb begin
 			ALU_icc_out = {n,z,v,c};
 		end
 		if (ALU_op3_in == `SMULcc) begin 
-			ALU_res_out = ALU_valA_in * valB;
+			ALU_res_out = 64'(signed'(ALU_valA_in * valB));
 			n = ALU_res_out[31]?1:0;
 			z = (ALU_res_out[31:0] == 0)?1:0;
 			v = 0;
@@ -339,7 +398,7 @@ always_comb begin
 			result = remainder + quotient;
 			if (result[31]) begin // negative result
 				if ((result < (-2**31)) && remainder == 0)
-					ALU_res_out = 32'h80000000;
+					ALU_res_out = 32'(signed'('h80000000));
 				else 	
 					ALU_res_out = quotient;			
 			end
@@ -360,7 +419,7 @@ always_comb begin
 			if (result[31]) begin // negative result
 				if ((result < (-2**31)) && remainder == 0) begin
 					v = 1;
-					ALU_res_out = 32'h80000000;
+					ALU_res_out = 32'(signed'('h80000000));
 				end 
 				else begin 	
 					ALU_res_out = quotient;			
@@ -387,7 +446,11 @@ always_comb begin
 			ALU_res_out = ALU_PC_in;
 			ALU_mux_sel_out = 1;
 		end
-  // function to be called to execute a system call
+		if (ALU_op3_in == `RDY)
+			ALU_res_out = ALU_Y_in;
+		if (ALU_op3_in == `WRY)
+			ALU_res_out = {ALU_valA_in ^ valB, 32'h00000000} ; // in regfile, only write data[63:32] to Y (mult)
+		// Traps
 		if (ALU_op3_in == 6'b111010) begin
 			c = ALU_icc_in[0];
 			v = ALU_icc_in[1];

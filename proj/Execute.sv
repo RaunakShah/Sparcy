@@ -3,7 +3,6 @@
 
  */
 
-// TODO alu, alu for pc, mux for alu inputs
 `include "ALUops.sv"
 /*
 algorithm:
@@ -96,7 +95,6 @@ logic [3:0] n_icc, p_icc, alu_icc_out;
 logic n_icc_write, p_icc_write, n_y_write, p_y_write, ALU_a_out;
 ALU alu (.ALU_valA_in(EX_valA_in), .ALU_valB_in(EX_valB_in), .ALU_op_in(EX_op_in), .ALU_op2_in(EX_op2_in), .ALU_imm22_in(EX_disp22_in), .ALU_op3_in(EX_op3_in), .ALU_i_in(EX_i_in), .ALU_simm13_in(EX_imm13_in), .ALU_res_out(alu_res_out), .ALU_PC_in(EX_PC_in), .ALU_cond_in(EX_cond_in), .ALU_rd_in(EX_rd_in), .ALU_disp30_in(EX_disp30_in), .ALU_target_address_out(alu_target_out), .ALU_mux_sel_out(alu_mux_sel), .clk(clk), .reset(reset), .ALU_icc_in(EX_icc_in), .ALU_icc_out(alu_icc_out), .ALU_Y_in(EX_Y_in), .ALU_Y_out(alu_y_out), .ALU_a_in(EX_a_in), .ALU_a_out(ALU_a_out), .ALU_g1_in(EX_g1_in), .ALU_o0_in(EX_o0_in), .ALU_o1_in(EX_o1_in), .ALU_o2_in(EX_o2_in), .ALU_o3_in(EX_o3_in),.ALU_o4_in(EX_o4_in),.ALU_o5_in(EX_o5_in));
 
-// add logic for bubble from decode
 always_comb begin
 	n_annul = p_annul;	
 	case (p_state)
@@ -272,7 +270,6 @@ always_comb begin
 		EX_icc_write_out = 0;
 		EX_Y_write_out = 0;
 		EX_Y_out = p_y;
-		// icc write zero TODO
 	end
 	else begin
 		EX_p_regD_out = n_rd; 
@@ -280,7 +277,6 @@ always_comb begin
 		EX_p_regWriteDouble_out = n_regWriteDouble;
 		EX_p_iccWrite_out = n_icc_write;
 		EX_p_yWrite_out = n_y_write;
-		// need to add icc write here for deps TODO
 	case (p_state) 
 		STATEA: begin
 			EX_alures_out = alu_res_out;

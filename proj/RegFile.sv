@@ -1,8 +1,5 @@
 module RegFile
 // register file
-// for now, only implementing 32 general purpose registers
-// need to add special purpose registers and register windows
-// TODO!!!! TRAPS and TBR
 #(
 	REG_BITS_SIZE = 5,
 	NO_OF_REG = 32,
@@ -40,7 +37,7 @@ module RegFile
 	
 );
 localparam NUM_ROWS = (WINDOW_SIZE*NO_OF_REG_WINDOWS);
-logic [(2**REG_BITS_SIZE)-1:0] GeneralRegister [512]; // need to change later
+logic [(2**REG_BITS_SIZE)-1:0] GeneralRegister [512]; 
 logic [(2**REG_BITS_SIZE)-1:0] GlobalGeneralRegister [8];
 // split PSR into components
 // logic [(2**REG_BITS_SIZE)-1:0] PSR;
@@ -77,7 +74,7 @@ always_ff @(posedge clk, negedge clk) begin
 		PSR_ET <= 0;
 		PSR_CWP <= 5'b00001;
 		WIM <= 0; 
-		Y <= 32'hffffffff;
+		Y <= 0;
         end
         else begin
 		// if (clk) write to reg
@@ -85,8 +82,6 @@ always_ff @(posedge clk, negedge clk) begin
 			if (reg_write_en) begin
 				// if 0-7, take from global
 				// else take from ((wrreg-8) + 16*cwp) mod (16*32)
-				//$display("REG: writing %ld", data);
-				//$display("REG: add %ld", wr_reg);
 				if (wr_reg <= 7) begin
 					if (wr_reg != 0)
 						GlobalGeneralRegister[wr_reg] = data[31:0];

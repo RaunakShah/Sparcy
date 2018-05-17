@@ -2,8 +2,6 @@
  * Instruction decode phase
  */
 `include "ALUops.sv"
-// TODO data in, dest reg and enable for write to reg file
-// TODO default case statement should latch old values rather than 0's
 module InstructionDecode
 #(
   // bus parameters
@@ -104,7 +102,7 @@ always_comb begin
 			n_y_write = Y_write(inst[31:30], inst[24:19]);
 			n_trap_write = trap_write(inst[31:30], inst[24:19]);
 			n_pc = ID_PCplus4_in;
-			if (inst == 32'h01000000) begin
+			if (inst == 32'h01000000 || inst == 32'h8143c000) begin
 				ID_PCplus4_out = ID_PCplus4_in;
 				a = inst[29];
 				op3 = inst[24:19];
@@ -114,7 +112,7 @@ always_comb begin
 				op = inst[31:30];
 				cond = inst[28:25];
 				op2 = inst[24:22];
-				rd = ((inst[31:30] == 2'b10) && (inst[24:19] == 6'b111010))?(5'b01000):(inst[29:25]);
+				rd = 5'b00000;//((inst[31:30] == 2'b10) && (inst[24:19] == 6'b111010))?(5'b01000):(inst[29:25]);
 				disp30 = inst[29:0];
 				ID_regWrite_out = 0;
 				ID_regWriteDouble_out = 0;
@@ -203,7 +201,10 @@ always_comb begin
 			cond = p_inst[28:25];
 			op2 = p_inst[24:22];
 			//rd = p_inst[29:25];
-			rd = ((p_inst[31:30] == 2'b10) && (p_inst[24:19] == 6'b111010))?(5'b01000):(p_inst[29:25]);
+			if (p_inst[31:30] == 2'b01)
+				rd = 5'b01111;
+			else
+				rd = ((p_inst[31:30] == 2'b10) && (p_inst[24:19] == 6'b111010))?(5'b01000):(p_inst[29:25]);
 			disp30 = p_inst[29:0];
 			ID_regWrite_out = p_regWrite;
 			ID_regWriteDouble_out = p_regWriteDouble;
@@ -230,7 +231,6 @@ always_comb begin
 			end
 			end
 		STATES: begin
-			//if (instruction_dependancy(p_inst[18:14], p_inst[4:0], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || instruction_dependancy(p_inst[18:14], p_inst[4:0], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], IDEX_icc_write) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], EXMem_icc_write) || Y_dep(p_inst[31:30], p_inst[24:19], IDEX_Y_write, EXMem_Y_write) || instruction_dependancy(p_inst[18:14], p_inst[4:0], MemWB_regD_out, MemWB_regWrite, MemWB_regWriteDouble)) begin
 			if (instruction_dependancy(p_inst[18:14], p_inst[4:0], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || instruction_dependancy(p_inst[18:14], p_inst[4:0], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], IDEX_icc_write) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], EXMem_icc_write) || Y_dep(p_inst[31:30], p_inst[24:19], IDEX_Y_write, EXMem_Y_write, MemWB_Y_write) || instruction_dependancy(p_inst[18:14], p_inst[4:0], MemWB_regD_out, MemWB_regWrite, MemWB_regWriteDouble) || store_dep(p_inst[31:30], p_inst[24:19], p_inst[29:25], IDEX_rd_out, IDEX_regWrite, IDEX_regWriteDouble) || store_dep(p_inst[31:30], p_inst[24:19], p_inst[29:25], EXMem_regD_out, EXMem_regWrite, EXMem_regWriteDouble) || store_dep(p_inst[31:30], p_inst[24:19], p_inst[29:25], MemWB_regD_out, MemWB_regWrite, MemWB_regWriteDouble) || trap_dep(p_inst[31:30], p_inst[24:19], IDEX_rd_out, IDEX_regWrite, EXMem_regD_out, EXMem_regWrite, MemWB_regD_out, MemWB_regWrite) || cc_dep(p_inst[31:30], p_inst[24:22], p_inst[24:19], MemWB_icc_write)) begin
 				ID_PCplus4_out = 0;
 				//valA = 0;
@@ -266,6 +266,10 @@ always_comb begin
 				op2 = p_inst[24:22];
 				//rd = p_inst[29:25];
 				rd = ((p_inst[31:30] == 2'b10) && (p_inst[24:19] == 6'b111010))?(5'b01000):(p_inst[29:25]);
+				if (p_inst[31:30] == 2'b01)
+					rd = 5'b01111;
+				else
+					rd = ((p_inst[31:30] == 2'b10) && (p_inst[24:19] == 6'b111010))?(5'b01000):(p_inst[29:25]);
 				disp30 = p_inst[29:0];
 				ID_regWrite_out = p_regWrite;//reg_write(inst[31:30], inst[24:19]);
 				ID_regWriteDouble_out = p_regWriteDouble;//reg_write_double(inst[31:30], inst[24:19]);
@@ -335,12 +339,14 @@ function bit reg_write(bit [1:0] op, bit [5:0] op3, bit [2:0] op2, bit [3:0] con
 	end
 	if (op == 2'b10 && op3 == 6'b111010 && cond == `TN)
 		return 0;
+	// WRY doesnt write to regD
+	if (op == 2'b10 && op3 == `WRY)
+		return 0;
 	return 1;
 
 endfunction
 
 function bit reg_write_double(bit [1:0] op, bit [5:0] op3);
-	// ADD FOR MUL AND DIV
 	if (op == 2'b11) begin
 		if (op3 == `LDD)
 			return 1;
@@ -353,7 +359,6 @@ function bit instruction_dependancy(bit [4:0] rs1, bit [4:0] rs2, bit [4:0] rd, 
 	if ( ((rs1 == rd || rs2 == rd) && (rd != 5'b00000) && (regwrite)) || ((rs1 == rd+1 || rs2 == rd+1) && regwritedouble)) begin
 		return 1;
 	end
-	// if instruction is trap, check vs g1, o0...o5
 
 	return 0;
 endfunction
@@ -397,12 +402,12 @@ function bit cc_write(bit [1:0] op, bit [5:0] op3);
 endfunction
 
 function bit Y_write(bit [1:0] op, bit [5:0] op3);
-//	return 1;
 	if (op == 2'b10) begin
 		if (op3 == `MULScc || op3 == `UMUL || op3 == `UMULcc || op3 == `SMUL || op3 == `SMULcc)
 			return 1;
+		if (op3 == `WRY)
+			return 1;
 	end
-	// TODO RDY WRY
 	return 0;
 endfunction
 
@@ -410,14 +415,15 @@ function bit Y_dep(bit [1:0] op, bit [5:0] op3, bit exwrite, bit memwrite, wbwri
 	if ((op == 2'b10) && (exwrite || memwrite || wbwrite)) begin
 		if (op3 == `UDIV || op3 == `SDIV || op3 == `UDIVcc || op3 == `SDIVcc) 
 			return 1;
+		if (op3 == `RDY)
+			return 1;
 	end
-	// TODO RDY WRY
 	return 0;
 endfunction
 
 function bit store_dep(bit [1:0] op, bit [5:0] op3, bit [4:0] rs, bit [4:0] rd, bit write, bit writeDouble);
 	if (op == 2'b11) begin
-		if ((op3 == `STB || op3 == `STH || op3 == `ST)) begin
+		if ((op3 == `STB || op3 == `STH || op3 == `ST || op3 == `SWAP)) begin
 			if (((rs == rd) && write) || ((rs == rd+1) && writeDouble)) 
 				return 1;
 		end
@@ -443,7 +449,7 @@ function bit trap_write(bit [1:0] op, bit [5:0] op3);
 endfunction
 
 function bit trap_dep(bit [1:0] op, bit [5:0] op3, bit [4:0] exregd, bit exwrite, bit [4:0] memregd, bit memwrite, bit [4:0] wbregd, bit wbwrite);
-	if (op == 2'b10 && op3 == 6'b111010) begin
+	if (op == 2'b10 && op3 == 6'b111010) begin // trap
 		if (exwrite) begin
 			if (exregd == 5'b00001 || exregd == 5'b01000 || exregd == 5'b01001 || exregd == 5'b01010 || exregd == 5'b01011 || exregd == 5'b01100 || exregd == 5'b01101)
 				return 1;
